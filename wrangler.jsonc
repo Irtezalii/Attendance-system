@@ -28,7 +28,8 @@
 		}
 	],
 	/**
-	 * Throttles login attempts per client IP + email.
+	 * Login throttling: LOGIN_LIMITER per client IP + email (password guessing),
+	 * LOGIN_IP_LIMITER per client IP (spraying many accounts).
 	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
 	 */
 	"ratelimits": [
@@ -36,6 +37,11 @@
 			"name": "LOGIN_LIMITER",
 			"namespace_id": "1001",
 			"simple": { "limit": 10, "period": 60 }
+		},
+		{
+			"name": "LOGIN_IP_LIMITER",
+			"namespace_id": "1002",
+			"simple": { "limit": 30, "period": 60 }
 		}
 	]
 	/**

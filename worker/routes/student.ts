@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import type {
   AttendanceStatus,
+  EnrollmentStatus,
   SessionStatus,
   StudentCourse,
   StudentCourseDetailResponse,
   StudentCoursesResponse,
+  StudentHistoryResponse,
 } from "../../shared/api";
 import { summarize } from "../../shared/api";
 import { requireAuth, type AppEnv } from "../lib/auth";
@@ -13,8 +15,9 @@ import { OFFERING_COLUMNS, OFFERING_JOINS, OFFERING_ORDER, toOfferingInfo, type 
 
 interface StudentCourseRow extends OfferingRow {
   enrollment_id: number;
+  enrollment_status: EnrollmentStatus;
   faculty_name: string;
-  faculty_designation: string;
+  faculty_designation: string | null;
   held: number;
   attended: number;
 }
@@ -22,7 +25,7 @@ interface StudentCourseRow extends OfferingRow {
 // Every query is scoped by e.student_id = <the signed-in student>, so a student can
 // only ever see their own enrollments and records.
 const STUDENT_COURSE_SQL = `
-  SELECT ${OFFERING_COLUMNS}, e.id AS enrollment_id,
+  SELECT ${OFFERING_COLUMNS}, e.id AS enrollment_id, e.status AS enrollment_status,
     f.name AS faculty_name, f.designation AS faculty_designation,
     COUNT(CASE WHEN a.status = 'held' THEN 1 END) AS held,
     COUNT(CASE WHEN a.status = 'held' AND r.status = 'present' THEN 1 END) AS attended
@@ -38,6 +41,7 @@ function toStudentCourse(row: StudentCourseRow): StudentCourse {
   return {
     ...toOfferingInfo(row),
     faculty: { name: row.faculty_name, designation: row.faculty_designation },
+    enrollmentStatus: row.enrollment_status,
     summary: summarize(row.held, row.attended),
   };
 }
@@ -49,6 +53,49 @@ export const studentRoutes = new Hono<AppEnv>()
       .bind(c.get("auth").profileId)
       .all<StudentCourseRow>();
     const body: StudentCoursesResponse = { courses: results.map(toStudentCourse) };
+    return c.json(body);
+  })
+  .get("/attendance", async (c) => {
+    // Attendance across all of the student's courses, newest first.
+    const scope = c.req.query("scope") === "all" ? "all" : "current";
+    const { results } = await c.env.DB.prepare(
+      `SELECT a.id, a.class_date, a.start_time, a.topic, a.status AS session_status, r.status,
+              co.id AS offering_id, c.code AS course_code, c.title AS course_title
+         FROM enrollments e
+         JOIN course_offerings co ON co.id = e.offering_id
+         ${OFFERING_JOINS}
+         JOIN attendance_sessions a ON a.offering_id = co.id
+         LEFT JOIN attendance_records r ON r.session_id = a.id AND r.enrollment_id = e.id
+        WHERE e.student_id = ? ${scope === "current" ? "AND sem.status = 'active'" : ""}
+        ORDER BY a.class_date DESC, a.start_time DESC, c.code
+        LIMIT 2000`,
+    )
+      .bind(c.get("auth").profileId)
+      .all<{
+        id: number;
+        class_date: string;
+        start_time: string;
+        topic: string | null;
+        session_status: SessionStatus;
+        status: AttendanceStatus | null;
+        offering_id: number;
+        course_code: string;
+        course_title: string;
+      }>();
+    const body: StudentHistoryResponse = {
+      scope,
+      entries: results.map((r) => ({
+        sessionId: r.id,
+        classDate: r.class_date,
+        startTime: r.start_time,
+        topic: r.topic,
+        sessionStatus: r.session_status,
+        status: r.status,
+        offeringId: r.offering_id,
+        courseCode: r.course_code,
+        courseTitle: r.course_title,
+      })),
+    };
     return c.json(body);
   })
   .get("/courses/:offeringId", async (c) => {

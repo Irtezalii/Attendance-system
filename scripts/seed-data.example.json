@@ -1,50 +1,75 @@
 {
-  "_comment": "Development data only. All people are fictional. Do not put real student data in this file.",
-  "programs": [
-    { "code": "BSCS", "name": "BS Computer Science" }
-  ],
+  "_comment": "DEVELOPMENT DATA ONLY. Every account here is fictional (DEV- roll numbers, Test faculty, .test email domains). Real people and passwords must never be added to this file. Programmes and courses come from data/curriculum (run the curriculum import first).",
   "semesters": [
+    { "number": 1, "academicYear": "2025-2026", "status": "completed" },
     { "number": 2, "academicYear": "2025-2026", "status": "completed" },
-    { "number": 3, "academicYear": "2026-2027", "status": "active" }
-  ],
-  "courses": [
-    { "code": "CS-121", "title": "Object Oriented Programming", "creditHours": 4 },
-    { "code": "CS-122", "title": "Digital Logic Design", "creditHours": 3 },
-    { "code": "CS-123", "title": "Discrete Structures", "creditHours": 3 },
-    { "code": "MT-102", "title": "Calculus II", "creditHours": 3 },
-    { "code": "EN-102", "title": "Communication Skills", "creditHours": 2 },
-    { "code": "CS-211", "title": "Data Structures", "creditHours": 4 },
-    { "code": "CS-212", "title": "Database Systems", "creditHours": 4 },
-    { "code": "CS-213", "title": "Web Development", "creditHours": 3 },
-    { "code": "CS-214", "title": "Computer Networks", "creditHours": 3 },
-    { "code": "MT-201", "title": "Linear Algebra", "creditHours": 3 }
+    { "number": 1, "academicYear": "2026-2027", "status": "active" },
+    { "number": 2, "academicYear": "2026-2027", "status": "upcoming" },
+    { "number": 3, "academicYear": "2026-2027", "status": "active" },
+    { "number": 4, "academicYear": "2026-2027", "status": "upcoming" },
+    { "number": 5, "academicYear": "2026-2027", "status": "active" },
+    { "number": 6, "academicYear": "2026-2027", "status": "upcoming" },
+    { "number": 7, "academicYear": "2026-2027", "status": "active" },
+    { "number": 8, "academicYear": "2026-2027", "status": "upcoming" }
   ],
   "faculty": [
-    { "employeeId": "FAC-001", "name": "Dr. Sara Malik", "designation": "Professor", "email": "sara.malik@college.test", "password": "password123" },
-    { "employeeId": "FAC-002", "name": "Dr. Omar Siddiqui", "designation": "Assistant Professor", "email": "omar.siddiqui@college.test", "password": "password123" },
-    { "employeeId": "FAC-003", "name": "Hina Raza", "designation": "Lecturer", "email": "hina.raza@college.test", "password": "password123" }
+    { "employeeId": "TEST-F01", "name": "Prof. Test Alpha", "designation": "Associate Professor", "email": "test.alpha@faculty.ubit.test", "password": "password123" },
+    { "employeeId": "TEST-F02", "name": "Dr. Test Beta", "designation": "Assistant Professor", "email": "test.beta@faculty.ubit.test", "password": "password123" },
+    { "employeeId": "TEST-F03", "name": "Ms. Test Gamma", "designation": "Lecturer", "email": "test.gamma@faculty.ubit.test", "password": "password123" }
   ],
   "students": [
-    { "rollNumber": "BSCS-25-001", "name": "Ali Hassan", "email": "ali.hassan@student.college.test", "password": "password123", "currentSemester": 3, "program": "BSCS" },
-    { "rollNumber": "BSCS-25-002", "name": "Fatima Noor", "email": "fatima.noor@student.college.test", "password": "password123", "currentSemester": 3, "program": "BSCS" },
-    { "rollNumber": "BSCS-25-003", "name": "Usman Tariq", "email": "usman.tariq@student.college.test", "password": "password123", "currentSemester": 3, "program": "BSCS" },
-    { "rollNumber": "BSCS-25-004", "name": "Zainab Iqbal", "email": "zainab.iqbal@student.college.test", "password": "password123", "currentSemester": 3, "program": "BSCS" },
-    { "rollNumber": "BSCS-25-005", "name": "Bilal Ahmed", "email": "bilal.ahmed@student.college.test", "password": "password123", "currentSemester": 3, "program": "BSCS" },
-    { "rollNumber": "BSCS-25-006", "name": "Maryam Javed", "email": "maryam.javed@student.college.test", "password": "password123", "currentSemester": 3, "program": "BSCS" }
+    { "rollNumber": "DEV-CS-25-001", "name": "Ali Hassan", "email": "ali.hassan@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSCS" },
+    { "rollNumber": "DEV-CS-25-002", "name": "Fatima Noor", "email": "fatima.noor@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSCS" },
+    { "rollNumber": "DEV-CS-25-003", "name": "Usman Tariq", "email": "usman.tariq@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSCS" },
+    { "rollNumber": "DEV-CS-25-004", "name": "Zainab Iqbal", "email": "zainab.iqbal@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSCS" },
+    { "rollNumber": "DEV-SE-25-001", "name": "Bilal Ahmed", "email": "bilal.ahmed@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSSE" },
+    { "rollNumber": "DEV-SE-25-002", "name": "Maryam Javed", "email": "maryam.javed@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSSE" },
+    { "rollNumber": "DEV-SE-25-003", "name": "Hamza Raza", "email": "hamza.raza@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSSE" },
+    { "rollNumber": "DEV-AI-26-001", "name": "Sana Kareem", "email": "sana.kareem@student.ubit.test", "password": "password123", "currentSemester": 1, "programme": "BSAI" },
+    { "rollNumber": "DEV-AI-26-002", "name": "Danish Mirza", "email": "danish.mirza@student.ubit.test", "password": "password123", "currentSemester": 1, "programme": "BSAI" },
+    { "rollNumber": "DEV-AI-26-003", "name": "Hira Kamal", "email": "hira.kamal@student.ubit.test", "password": "password123", "currentSemester": 1, "programme": "BSAI" }
   ],
+  "cohorts": {
+    "bscs-2025": ["DEV-CS-25-001", "DEV-CS-25-002", "DEV-CS-25-003", "DEV-CS-25-004"],
+    "bsse-2025": ["DEV-SE-25-001", "DEV-SE-25-002", "DEV-SE-25-003"],
+    "bsai-2026": ["DEV-AI-26-001", "DEV-AI-26-002", "DEV-AI-26-003"]
+  },
   "offerings": [
-    { "course": "CS-121", "semester": 2, "academicYear": "2025-2026", "faculty": "FAC-001", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003", "BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] },
-    { "course": "CS-122", "semester": 2, "academicYear": "2025-2026", "faculty": "FAC-002", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003", "BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] },
-    { "course": "CS-123", "semester": 2, "academicYear": "2025-2026", "faculty": "FAC-003", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003", "BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] },
-    { "course": "MT-102", "semester": 2, "academicYear": "2025-2026", "faculty": "FAC-003", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003", "BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] },
-    { "course": "EN-102", "semester": 2, "academicYear": "2025-2026", "faculty": "FAC-002", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003", "BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] },
+    { "course": "CS-352", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F01", "cohort": "bscs-2025" },
+    { "course": "CS-354", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F02", "cohort": "bscs-2025" },
+    { "course": "CS-356", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F03", "cohort": "bscs-2025" },
+    { "course": "CS-358", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F01", "cohort": "bscs-2025" },
+    { "course": "CS-362", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F02", "cohort": "bscs-2025" },
+    { "course": "CS-364", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F03", "cohort": "bscs-2025" },
 
-    { "course": "CS-211", "semester": 3, "academicYear": "2026-2027", "faculty": "FAC-001", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003", "BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] },
-    { "course": "CS-212", "semester": 3, "academicYear": "2026-2027", "section": "A", "faculty": "FAC-001", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003"] },
-    { "course": "CS-212", "semester": 3, "academicYear": "2026-2027", "section": "B", "faculty": "FAC-002", "students": ["BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] },
-    { "course": "CS-213", "semester": 3, "academicYear": "2026-2027", "faculty": "FAC-002", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003", "BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] },
-    { "course": "CS-214", "semester": 3, "academicYear": "2026-2027", "faculty": "FAC-003", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003", "BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] },
-    { "course": "MT-201", "semester": 3, "academicYear": "2026-2027", "faculty": "FAC-003", "students": ["BSCS-25-001", "BSCS-25-002", "BSCS-25-003", "BSCS-25-004", "BSCS-25-005", "BSCS-25-006"] }
+    { "course": "SE-352", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F02", "cohort": "bsse-2025" },
+    { "course": "SE-354", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F01", "cohort": "bsse-2025" },
+    { "course": "SE-356", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F03", "cohort": "bsse-2025" },
+    { "course": "SE-358", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F02", "cohort": "bsse-2025" },
+    { "course": "SE-360", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F03", "cohort": "bsse-2025" },
+    { "course": "SE-362", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F01", "cohort": "bsse-2025" },
+    { "course": "SE-366", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F02", "cohort": "bsse-2025" },
+
+    { "course": "CS-451", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bscs-2025" },
+    { "course": "CS-453", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bscs-2025" },
+    { "course": "CS-455", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bscs-2025" },
+    { "course": "CS-457", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bscs-2025" },
+    { "course": "CS-459", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bscs-2025" },
+    { "course": "CS-461", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bscs-2025" },
+
+    { "course": "SE-451", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bsse-2025" },
+    { "course": "SE-453", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bsse-2025" },
+    { "course": "SE-455", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bsse-2025" },
+    { "course": "SE-457", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bsse-2025" },
+    { "course": "SE-459", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bsse-2025" },
+    { "course": "SE-450", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bsse-2025" },
+
+    { "course": "AI-351", "semester": 1, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bsai-2026" },
+    { "course": "AI-353", "semester": 1, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bsai-2026" },
+    { "course": "AI-355", "semester": 1, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bsai-2026" },
+    { "course": "AI-357", "semester": 1, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bsai-2026" },
+    { "course": "AI-359", "semester": 1, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bsai-2026" },
+    { "course": "AI-361", "semester": 1, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bsai-2026" }
   ],
   "demoAttendance": {
     "seed": 42,
@@ -53,7 +78,8 @@
     "endDate": "2026-10-15",
     "semesterStartDates": {
       "2/2025-2026": "2026-02-02",
-      "3/2026-2027": "2026-09-01"
+      "3/2026-2027": "2026-09-01",
+      "1/2026-2027": "2026-09-14"
     }
   }
 }

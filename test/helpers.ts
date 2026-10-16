@@ -8,14 +8,15 @@ export const PASSWORD = "correct-horse-battery";
  * Minimal fixture:
  *  - prof.a teaches CS-1 (active, students s1+s2) and CS-3 (completed semester, s1)
  *  - prof.b teaches CS-2 (active, students s1+s3)
- *  - disabled@ is a disabled student account
+ *  - disabled@ is a disabled student account; inactive.prof@ has an inactive faculty profile
+ *  - faculty 4 is a directory entry with no login account
  */
 export async function seedFixture() {
   const hash = await hashPassword(PASSWORD);
   const db = env.DB;
   await db.batch(
     [
-      "INSERT INTO programs (id, code, name) VALUES (1, 'BSCS', 'BS Computer Science')",
+      "INSERT INTO programmes (id, code, name) VALUES (1, 'BSCS', 'BS Computer Science')",
       "INSERT INTO semesters (id, number, academic_year, status) VALUES (1, 3, '2026-2027', 'active'), (2, 2, '2025-2026', 'completed')",
       "INSERT INTO courses (id, code, title, credit_hours) VALUES (1, 'CS-1', 'Course One', 3), (2, 'CS-2', 'Course Two', 3), (3, 'CS-3', 'Course Three', 3)",
       `INSERT INTO users (id, email, password_hash, role, status) VALUES
@@ -24,9 +25,14 @@ export async function seedFixture() {
          (3, 's1@test.edu', '${hash}', 'student', 'active'),
          (4, 's2@test.edu', '${hash}', 'student', 'active'),
          (5, 's3@test.edu', '${hash}', 'student', 'active'),
-         (6, 'disabled@test.edu', '${hash}', 'student', 'disabled')`,
-      "INSERT INTO faculty (id, user_id, employee_id, name, designation) VALUES (1, 1, 'F-1', 'Prof A', 'Professor'), (2, 2, 'F-2', 'Prof B', 'Lecturer')",
-      `INSERT INTO students (id, user_id, roll_number, name, current_semester, program_id) VALUES
+         (6, 'disabled@test.edu', '${hash}', 'student', 'disabled'),
+         (7, 'inactive.prof@test.edu', '${hash}', 'faculty', 'active')`,
+      `INSERT INTO faculty (id, user_id, employee_id, name, designation, category, status) VALUES
+         (1, 1, 'F-1', 'Prof A', 'Professor', 'test_account', 'active'),
+         (2, 2, 'F-2', 'Prof B', 'Lecturer', 'test_account', 'active'),
+         (3, 7, 'F-3', 'Prof Inactive', 'Lecturer', 'test_account', 'inactive'),
+         (4, NULL, NULL, 'Directory Only', 'Assistant Professor', 'full_time', 'active')`,
+      `INSERT INTO students (id, user_id, roll_number, name, current_semester, programme_id) VALUES
          (1, 3, 'R-1', 'Student One', 3, 1), (2, 4, 'R-2', 'Student Two', 3, 1),
          (3, 5, 'R-3', 'Student Three', 3, 1), (4, 6, 'R-4', 'Disabled Student', 3, 1)`,
       `INSERT INTO course_offerings (id, course_id, semester_id, faculty_id, section) VALUES

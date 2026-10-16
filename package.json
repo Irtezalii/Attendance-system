@@ -14,10 +14,17 @@
     "test:watch": "vitest",
     "db:migrate:local": "wrangler d1 migrations apply attendance-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply attendance-db --remote",
+    "db:import:curriculum:local": "node scripts/import-curriculum.mjs --out .wrangler/seed/curriculum.sql --report docs/curriculum-validation.md && wrangler d1 execute attendance-db --local --file .wrangler/seed/curriculum.sql",
+    "db:import:curriculum:remote": "node scripts/import-curriculum.mjs --out .wrangler/seed/curriculum.sql && wrangler d1 execute attendance-db --remote --file .wrangler/seed/curriculum.sql",
+    "db:import:faculty:local": "node scripts/import-faculty.mjs data/faculty/ubit-cs-directory.json --out .wrangler/seed/faculty.sql && wrangler d1 execute attendance-db --local --file .wrangler/seed/faculty.sql",
+    "db:import:faculty:remote": "node scripts/import-faculty.mjs data/faculty/ubit-cs-directory.json --out .wrangler/seed/faculty.sql && wrangler d1 execute attendance-db --remote --file .wrangler/seed/faculty.sql",
     "db:seed:local": "node scripts/seed.mjs scripts/seed-data.example.json --out .wrangler/seed/dev-seed.sql && wrangler d1 execute attendance-db --local --file .wrangler/seed/dev-seed.sql",
-    "db:reset:local": "node -e \"require('fs').rmSync('.wrangler/state/v3/d1',{recursive:true,force:true})\" && npm run db:migrate:local && npm run db:seed:local"
+    "db:setup:local": "npm run db:migrate:local && npm run db:import:curriculum:local && npm run db:import:faculty:local && npm run db:seed:local",
+    "db:reset:local": "node scripts/reset-local-db.mjs && npm run db:setup:local"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/source-serif-4": "^5.3.0",
     "hono": "^4.13.13",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

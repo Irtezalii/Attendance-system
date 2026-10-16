@@ -3,7 +3,6 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Role } from "../../shared/api";
 import { HttpError } from "./http";
 
-export const SESSION_COOKIE = "sid";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface AuthUser {
@@ -31,10 +30,21 @@ async function sha256Hex(value: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+function isHttps(c: Context): boolean {
+  return new URL(c.req.url).protocol === "https:";
+}
+
+// Over HTTPS the cookie uses the __Host- prefix: browsers only accept it when it is
+// Secure, has Path=/ and no Domain, so a subdomain or plain-HTTP page cannot plant or
+// overwrite it. Local development over http://localhost falls back to a plain name.
+function sessionCookieName(c: Context): string {
+  return isHttps(c) ? "__Host-sid" : "sid";
+}
+
 function cookieOptions(c: Context) {
   return {
     httpOnly: true,
-    secure: new URL(c.req.url).protocol === "https:",
+    secure: isHttps(c),
     sameSite: "Lax" as const,
     path: "/",
   };
@@ -43,28 +53,32 @@ function cookieOptions(c: Context) {
 export async function startSession(c: Context<AppEnv>, userId: number): Promise<void> {
   const token = randomToken();
   const now = Date.now();
-  await c.env.DB.batch([
-    // Opportunistic cleanup of this user's expired sessions.
-    c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND expires_at <= ?").bind(userId, now),
-    c.env.DB.prepare("INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)").bind(
+  const db = c.env.DB;
+  const previous = getCookie(c, sessionCookieName(c));
+  await db.batch([
+    // Cleanup of expired sessions (indexed on expires_at).
+    db.prepare("DELETE FROM sessions WHERE expires_at <= ?").bind(now),
+    // Signing in again revokes the session this browser had before.
+    ...(previous ? [db.prepare("DELETE FROM sessions WHERE id = ?").bind(await sha256Hex(previous))] : []),
+    db.prepare("INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)").bind(
       await sha256Hex(token),
       userId,
       now + SESSION_TTL_MS,
     ),
   ]);
-  setCookie(c, SESSION_COOKIE, token, { ...cookieOptions(c), maxAge: SESSION_TTL_MS / 1000 });
+  setCookie(c, sessionCookieName(c), token, { ...cookieOptions(c), maxAge: SESSION_TTL_MS / 1000 });
 }
 
 export async function endSession(c: Context<AppEnv>): Promise<void> {
-  const token = getCookie(c, SESSION_COOKIE);
+  const token = getCookie(c, sessionCookieName(c));
   if (token) {
     await c.env.DB.prepare("DELETE FROM sessions WHERE id = ?").bind(await sha256Hex(token)).run();
   }
-  deleteCookie(c, SESSION_COOKIE, cookieOptions(c));
+  deleteCookie(c, sessionCookieName(c), cookieOptions(c));
 }
 
 async function loadAuthUser(c: Context<AppEnv>): Promise<AuthUser | null> {
-  const token = getCookie(c, SESSION_COOKIE);
+  const token = getCookie(c, sessionCookieName(c));
   if (!token || token.length > 100) return null;
   const row = await c.env.DB.prepare(
     `SELECT u.id AS user_id, u.email, u.role, st.id AS student_id, f.id AS faculty_id
@@ -72,7 +86,9 @@ async function loadAuthUser(c: Context<AppEnv>): Promise<AuthUser | null> {
        JOIN users u ON u.id = s.user_id
        LEFT JOIN students st ON st.user_id = u.id
        LEFT JOIN faculty f ON f.user_id = u.id
-      WHERE s.id = ? AND s.expires_at > ? AND u.status = 'active'`,
+      WHERE s.id = ? AND s.expires_at > ? AND u.status = 'active'
+        -- A faculty profile marked inactive also blocks sign-in.
+        AND (u.role <> 'faculty' OR f.status = 'active')`,
   )
     .bind(await sha256Hex(token), Date.now())
     .first<{ user_id: number; email: string; role: Role; student_id: number | null; faculty_id: number | null }>();

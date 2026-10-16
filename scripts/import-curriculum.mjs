@@ -1,0 +1,281 @@
+#!/usr/bin/env node
+// Imports programme curricula (data/curriculum/*.json) into D1 and writes a validation report.
+//
+//   node scripts/import-curriculum.mjs --out .wrangler/seed/curriculum.sql [--report docs/curriculum-validation.md] [files...]
+//   npx wrangler d1 execute attendance-db --local --file .wrangler/seed/curriculum.sql
+//
+// Repeatable: programmes, curricula, courses and curriculum rows are upserted on their
+// natural keys (programme code, curriculum version, course code, slot label), and rows
+// removed from a curriculum file are removed from that curriculum. Courses themselves are
+// never deleted, because course offerings may reference them.
+//
+// Values are imported as published. Inconsistencies are reported, not corrected.
+
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+
+const args = process.argv.slice(2);
+const flag = (name) => {
+  const i = args.indexOf(name);
+  return i >= 0 ? args[i + 1] : undefined;
+};
+const outPath = flag("--out");
+const reportPath = flag("--report");
+const valueFlags = new Set([outPath, reportPath]);
+let files = args.filter((a) => !a.startsWith("--") && !valueFlags.has(a));
+if (files.length === 0) {
+  files = readdirSync("data/curriculum").filter((f) => f.endsWith(".json")).sort().map((f) => join("data/curriculum", f));
+}
+if (!outPath) fail("usage: node scripts/import-curriculum.mjs --out <file.sql> [--report <file.md>] [files...]");
+
+function fail(message) {
+  console.error(`import-curriculum: ${message}`);
+  process.exit(1);
+}
+
+function sql(value) {
+  if (value === null || value === undefined) return "NULL";
+  if (typeof value === "number") return String(value);
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+const tidy = (s) => String(s).replace(/\s+/g, " ").replace(/\(\s+/g, "(").replace(/\s+\)/g, ")").trim();
+
+/** "4 (3+1)" -> { total: 4, theory: 3, practical: 1 }; "3" -> { total: 3, theory: null, practical: null } */
+function parseCredits(text, where) {
+  const m = /^(\d+)\s*(?:\(\s*(\d+)\s*\+\s*(\d+)\s*\))?$/.exec(String(text).trim());
+  if (!m) fail(`${where}: cannot read credits "${text}"`);
+  return { total: +m[1], theory: m[2] === undefined ? null : +m[2], practical: m[3] === undefined ? null : +m[3] };
+}
+
+const CODE = /^[A-Z]{2,4}-\d{3}$/;
+const PLACEHOLDER = /^[A-Z]{2,4}-x{3}$/i;
+
+// ---- Load and validate ----
+const programmes = files.map((file) => {
+  const data = JSON.parse(readFileSync(file, "utf8"));
+  const code = data.programme?.code;
+  if (!code || !data.curriculum?.version || !Array.isArray(data.semesters)) fail(`${file}: missing programme, curriculum or semesters`);
+  const items = [];
+  for (const semester of data.semesters) {
+    if (!(semester.number >= 1 && semester.number <= 8)) fail(`${file}: semester number ${semester.number} out of range`);
+    semester.items.forEach((item, position) => {
+      const where = `${code} semester ${semester.number} item ${position + 1}`;
+      const credits = parseCredits(item.credits, where);
+      if (item.slot) {
+        if (!PLACEHOLDER.test(item.placeholderCode ?? "")) fail(`${where}: slot needs a placeholder code like CS-xxx`);
+        items.push({ kind: "slot", semester: semester.number, position, label: tidy(item.slot), placeholder: item.placeholderCode, credits, electiveGroup: item.electiveGroup ?? null, notes: item.notes ?? null });
+      } else {
+        if (!CODE.test(item.code ?? "")) fail(`${where}: invalid course code "${item.code}"`);
+        items.push({ kind: "course", semester: semester.number, position, code: item.code, title: tidy(item.title), credits, requirement: "compulsory", alternativeGroup: item.alternativeGroup ?? null, notes: item.notes ?? null });
+      }
+    });
+  }
+  for (const pool of data.electivePools ?? []) {
+    pool.courses.forEach((course, position) => {
+      const where = `${code} elective pool ${pool.group}`;
+      if (!CODE.test(course.code ?? "")) fail(`${where}: invalid course code "${course.code}"`);
+      items.push({ kind: "course", semester: null, position, code: course.code, title: tidy(course.title), credits: parseCredits(course.credits, where), requirement: "elective", electiveGroup: pool.group, alternativeGroup: null, notes: pool.description ?? null });
+    });
+  }
+  return { file, data, code, items };
+});
+
+// A course code must mean the same course everywhere.
+const byCode = new Map();
+for (const p of programmes) {
+  for (const item of p.items.filter((i) => i.kind === "course")) {
+    const seen = byCode.get(item.code);
+    if (seen && (seen.title !== item.title || seen.credits.total !== item.credits.total)) {
+      fail(`course ${item.code} is defined differently in ${seen.programme} and ${p.code}`);
+    }
+    if (seen && seen.programme === p.code) fail(`course ${item.code} appears twice in ${p.code}`);
+    byCode.set(item.code, { ...item, programme: p.code });
+  }
+}
+
+// ---- SQL ----
+const out = ["-- Generated by scripts/import-curriculum.mjs from " + files.join(", ") + ". Safe to re-run."];
+
+for (const p of programmes) {
+  const { programme, curriculum } = p.data;
+  const curRef = `(SELECT cu.id FROM curricula cu JOIN programmes pr ON pr.id = cu.programme_id WHERE pr.code = ${sql(p.code)} AND cu.version = ${sql(curriculum.version)})`;
+
+  out.push(
+    `INSERT INTO programmes (code, name, semester_count) VALUES (${sql(p.code)}, ${sql(programme.name)}, ${sql(programme.semesterCount ?? 8)})
+       ON CONFLICT (code) DO UPDATE SET name = excluded.name, semester_count = excluded.semester_count;`,
+    `INSERT INTO curricula (programme_id, version, source_url, source_retrieved_on, stated_total_courses, stated_total_credits, notes)
+       SELECT id, ${sql(curriculum.version)}, ${sql(curriculum.sourceUrl)}, ${sql(curriculum.retrievedOn)}, ${sql(curriculum.statedTotalCourses)}, ${sql(curriculum.statedTotalCredits)}, ${sql(curriculum.notes)}
+         FROM programmes WHERE code = ${sql(p.code)}
+       ON CONFLICT (programme_id, version) DO UPDATE SET source_url = excluded.source_url, source_retrieved_on = excluded.source_retrieved_on,
+         stated_total_courses = excluded.stated_total_courses, stated_total_credits = excluded.stated_total_credits, notes = excluded.notes;`,
+  );
+
+  for (const item of p.items) {
+    if (item.kind === "course") {
+      out.push(
+        `INSERT INTO courses (code, title, credit_hours, theory_credits, practical_credits)
+           VALUES (${sql(item.code)}, ${sql(item.title)}, ${sql(item.credits.total)}, ${sql(item.credits.theory)}, ${sql(item.credits.practical)})
+           ON CONFLICT (code) DO UPDATE SET title = excluded.title, credit_hours = excluded.credit_hours,
+             theory_credits = excluded.theory_credits, practical_credits = excluded.practical_credits;`,
+        `INSERT INTO curriculum_courses (curriculum_id, semester_number, position, requirement, course_id, elective_group, alternative_group, notes)
+           SELECT ${curRef}, ${sql(item.semester)}, ${sql(item.position)}, ${sql(item.requirement)}, c.id, ${sql(item.electiveGroup ?? null)}, ${sql(item.alternativeGroup)}, ${sql(item.notes)}
+             FROM courses c WHERE c.code = ${sql(item.code)}
+           ON CONFLICT (curriculum_id, course_id) WHERE course_id IS NOT NULL DO UPDATE SET
+             semester_number = excluded.semester_number, position = excluded.position, requirement = excluded.requirement,
+             elective_group = excluded.elective_group, alternative_group = excluded.alternative_group, notes = excluded.notes;`,
+      );
+    } else {
+      out.push(
+        `INSERT INTO curriculum_courses (curriculum_id, semester_number, position, requirement, slot_label, placeholder_code,
+             slot_credit_hours, slot_theory_credits, slot_practical_credits, elective_group, notes)
+           VALUES (${curRef}, ${sql(item.semester)}, ${sql(item.position)}, 'elective', ${sql(item.label)}, ${sql(item.placeholder)},
+             ${sql(item.credits.total)}, ${sql(item.credits.theory)}, ${sql(item.credits.practical)}, ${sql(item.electiveGroup)}, ${sql(item.notes)})
+           ON CONFLICT (curriculum_id, semester_number, slot_label) WHERE slot_label IS NOT NULL DO UPDATE SET
+             position = excluded.position, placeholder_code = excluded.placeholder_code, slot_credit_hours = excluded.slot_credit_hours,
+             slot_theory_credits = excluded.slot_theory_credits, slot_practical_credits = excluded.slot_practical_credits,
+             elective_group = excluded.elective_group, notes = excluded.notes;`,
+      );
+    }
+  }
+
+  // Remove rows that are no longer in the file, so the curriculum matches it exactly.
+  const codes = p.items.filter((i) => i.kind === "course").map((i) => sql(i.code)).join(", ");
+  const slots = p.items.filter((i) => i.kind === "slot").map((i) => sql(`${i.semester}|${i.label}`)).join(", ");
+  out.push(
+    `DELETE FROM curriculum_courses WHERE curriculum_id = ${curRef} AND (
+       (course_id IS NOT NULL AND course_id NOT IN (SELECT id FROM courses WHERE code IN (${codes})))
+       OR (slot_label IS NOT NULL AND (semester_number || '|' || slot_label) NOT IN (${slots || "''"})));`,
+  );
+}
+
+mkdirSync(dirname(outPath), { recursive: true });
+writeFileSync(outPath, out.join("\n") + "\n");
+console.log(`import-curriculum: wrote ${out.length - 1} statements for ${programmes.map((p) => p.code).join(", ")} to ${outPath}`);
+
+// ---- Validation report ----
+if (reportPath) {
+  writeFileSync(reportPath, buildReport());
+  console.log(`import-curriculum: wrote validation report to ${reportPath}`);
+}
+
+function buildReport() {
+  const roman = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+  const lines = [
+    "# Curriculum validation report",
+    "",
+    "Generated by `scripts/import-curriculum.mjs` from `data/curriculum/*.json`. Do not edit by hand; re-run the import to refresh it.",
+    "",
+    "Values are imported exactly as published (whitespace normalised only). Findings below are for review by the department; nothing has been corrected.",
+    "",
+    "## Summary",
+    "",
+    "| Programme | Semesters | Courses in plan | Elective slots | Elective pool courses | Plan credits | Stated credits | Plan course count | Stated course count |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+  ];
+  const sections = [];
+
+  for (const p of programmes) {
+    const { curriculum } = p.data;
+    const plan = p.items.filter((i) => i.semester !== null);
+    const findings = [];
+    let planCredits = 0;
+    let planCount = 0;
+    const semesterRows = [];
+
+    for (const semester of p.data.semesters) {
+      const rows = plan.filter((i) => i.semester === semester.number);
+      // Alternatives (e.g. Project or Thesis) count once.
+      const seenAlt = new Set();
+      let credits = 0;
+      let count = 0;
+      for (const r of rows) {
+        if (r.alternativeGroup) {
+          if (seenAlt.has(r.alternativeGroup)) continue;
+          seenAlt.add(r.alternativeGroup);
+        }
+        credits += r.credits.total;
+        count++;
+      }
+      planCredits += credits;
+      planCount += count;
+      const ok = semester.statedTotalCredits === undefined || semester.statedTotalCredits === credits;
+      semesterRows.push(`| ${roman[semester.number]} | ${count} | ${credits} | ${semester.statedTotalCredits ?? "—"} | ${ok ? "OK" : "**Mismatch**"} |`);
+      if (!ok) findings.push(`Semester ${roman[semester.number]}: courses add up to ${credits} credits; the source states ${semester.statedTotalCredits}.`);
+    }
+    const slots = plan.filter((i) => i.kind === "slot");
+    const pool = p.items.filter((i) => i.semester === null);
+
+    if (curriculum.statedTotalCredits !== undefined && curriculum.statedTotalCredits !== planCredits) {
+      findings.push(`Programme total: the semester plan adds up to ${planCredits} credit hours; the summary table states ${curriculum.statedTotalCredits}.`);
+    }
+    if (curriculum.statedTotalCourses !== undefined && curriculum.statedTotalCourses !== planCount) {
+      findings.push(`Course count: the semester plan has ${planCount} courses (elective slots included, alternatives counted once); the summary table states ${curriculum.statedTotalCourses}.`);
+    }
+    for (const i of p.items) {
+      const c = i.credits;
+      if (c.theory !== null && c.theory + c.practical !== c.total) {
+        findings.push(`${i.code ?? i.placeholder} ${i.title ?? i.label}: breakdown ${c.theory}+${c.practical} does not equal the total ${c.total}.`);
+      }
+      if (c.theory === null) findings.push(`${i.code ?? i.placeholder} ${i.title ?? i.label}: no theory/practical breakdown published (stored as unknown).`);
+      if (i.kind === "course" && i.semester !== null) {
+        const n = Number(i.code.slice(-3));
+        const expectedHundreds = 3 + Math.floor((i.semester - 1) / 2);
+        if (Math.floor(n / 100) !== expectedHundreds || n % 2 !== i.semester % 2) {
+          findings.push(`${i.code} ${i.title}: code does not follow the usual numbering for semester ${roman[i.semester]} (${expectedHundreds}xx, ${i.semester % 2 ? "odd" : "even"}).`);
+        }
+      }
+    }
+    for (const s of slots) findings.push(`Semester ${roman[s.semester]} "${s.label}" uses placeholder code ${s.placeholder}; filled from elective pool "${s.electiveGroup}".`);
+
+    lines.push(`| ${p.code} | ${p.data.semesters.length} | ${plan.length - slots.length} | ${slots.length} | ${pool.length} | ${planCredits} | ${curriculum.statedTotalCredits ?? "—"} | ${planCount} | ${curriculum.statedTotalCourses ?? "—"} |`);
+
+    sections.push(
+      `## ${p.code} — ${p.data.programme.name}`,
+      "",
+      `Source: <${curriculum.sourceUrl}> (retrieved ${curriculum.retrievedOn}). Data file: \`${p.file.replaceAll("\\", "/")}\`.`,
+      "",
+      "| Semester | Courses | Credits (computed) | Credits (stated) | Check |",
+      "| --- | ---: | ---: | ---: | --- |",
+      ...semesterRows,
+      "",
+      "### Automated findings",
+      "",
+      ...(findings.length ? findings.map((f) => `- ${f}`) : ["- None."]),
+      "",
+      "### Issues noted during transcription",
+      "",
+      ...((p.data.sourceIssues ?? []).length ? p.data.sourceIssues.map((f) => `- ${f}`) : ["- None."]),
+      "",
+    );
+  }
+
+  // Same title, different credit structure across programmes (informational).
+  const byTitle = new Map();
+  for (const p of programmes) {
+    for (const i of p.items.filter((x) => x.kind === "course")) {
+      const key = i.title.toLowerCase().replace(/&/g, "and");
+      if (!byTitle.has(key)) byTitle.set(key, []);
+      byTitle.get(key).push({ programme: p.code, code: i.code, credits: i.credits });
+    }
+  }
+  const differing = [...byTitle.entries()]
+    .filter(([, list]) => list.length > 1 && new Set(list.map((l) => `${l.credits.total}|${l.credits.theory}|${l.credits.practical}`)).size > 1)
+    .map(([, list]) => `- ${list.map((l) => `${l.code} ${fmt(l.credits)}`).join(" · ")}`);
+
+  lines.push(
+    "",
+    ...sections,
+    "## Same course title, different credit structure across programmes",
+    "",
+    "These are distinct curriculum records with their own codes. Listed for information only.",
+    "",
+    ...(differing.length ? differing : ["- None."]),
+    "",
+  );
+  return lines.join("\n");
+}
+
+function fmt(c) {
+  return c.theory === null ? `${c.total}` : `${c.total} (${c.theory}+${c.practical})`;
+}

@@ -1,8 +1,13 @@
 #!/usr/bin/env node
-// Generates an idempotent SQL seed file from a JSON data file.
+// Generates an idempotent SQL seed file for accounts, semesters, course offerings and
+// enrollments from a JSON data file.
 //
 //   node scripts/seed.mjs <data.json> --out <file.sql>
 //   npx wrangler d1 execute attendance-db --local --file <file.sql>
+//
+// Run scripts/import-curriculum.mjs first: programmes and courses come from the curriculum,
+// and every offering must use a course code that exists there (checked before any SQL is
+// written). Faculty directory profiles come from scripts/import-faculty.mjs.
 //
 // Rows are matched by natural keys (email, roll number, employee ID, course code, ...)
 // and inserted with ON CONFLICT DO NOTHING, so re-running never overwrites existing
@@ -12,8 +17,8 @@
 // Keep real data files out of git: scripts/data/ is gitignored.
 
 import { pbkdf2Sync, randomBytes } from "node:crypto";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const PBKDF2_ITERATIONS = 100_000; // Workers WebCrypto caps PBKDF2 at 100k iterations.
 
@@ -52,16 +57,49 @@ function requirePassword(entry, who) {
   }
 }
 
+/** Students of an offering: an explicit list, or a named cohort from data.cohorts. */
+function rosterOf(o) {
+  if (o.students) return o.students;
+  if (o.cohort && !data.cohorts?.[o.cohort]) fail(`offering ${o.course}: unknown cohort "${o.cohort}"`);
+  return data.cohorts?.[o.cohort] ?? [];
+}
+
+// Every offered course must exist in the curriculum (or in this file's own "courses"),
+// otherwise its INSERT ... SELECT would silently insert nothing.
+const curriculumCourses = new Map();
+for (const file of readdirSync("data/curriculum").filter((f) => f.endsWith(".json"))) {
+  const cur = JSON.parse(readFileSync(join("data/curriculum", file), "utf8"));
+  for (const s of cur.semesters) {
+    for (const i of s.items) if (i.code) curriculumCourses.set(i.code, { programme: cur.programme.code, semester: s.number });
+  }
+  for (const g of cur.electivePools ?? []) {
+    for (const c of g.courses) curriculumCourses.set(c.code, { programme: cur.programme.code, semester: null });
+  }
+}
+const ownCourses = new Set((data.courses ?? []).map((c) => c.code));
+const studentProgramme = new Map((data.students ?? []).map((s) => [s.rollNumber, s.programme]));
+for (const o of data.offerings ?? []) {
+  // "faculty" = employee ID of an account in this file; "facultyKey" = directory profile key.
+  if (!o.faculty && !o.facultyKey) fail(`offering ${o.course}: set "faculty" (employee ID) or "facultyKey" (directory key)`);
+  const known = curriculumCourses.get(o.course);
+  if (!known && !ownCourses.has(o.course)) fail(`offering ${o.course}: course code not found in data/curriculum`);
+  if (known?.semester && known.semester !== o.semester) {
+    console.warn(`seed: note: ${o.course} is a semester ${known.semester} course in the curriculum but offered in semester ${o.semester}`);
+  }
+  for (const roll of rosterOf(o)) {
+    const programme = studentProgramme.get(roll);
+    if (known && programme && programme !== known.programme) {
+      fail(`offering ${o.course} (${known.programme}): student ${roll} is in ${programme}`);
+    }
+  }
+}
+
 const offeringRef = (o) =>
   `(SELECT co.id FROM course_offerings co
      JOIN courses c ON c.id = co.course_id
      JOIN semesters s ON s.id = co.semester_id
     WHERE c.code = ${sql(o.course)} AND s.number = ${sql(o.semester)}
       AND s.academic_year = ${sql(o.academicYear)} AND co.section = ${sql(o.section ?? "A")})`;
-
-for (const p of data.programs ?? []) {
-  out.push(`INSERT INTO programs (code, name) VALUES (${sql(p.code)}, ${sql(p.name)}) ON CONFLICT DO NOTHING;`);
-}
 
 for (const s of data.semesters ?? []) {
   out.push(
@@ -80,8 +118,9 @@ for (const f of data.faculty ?? []) {
   const email = f.email.trim().toLowerCase();
   out.push(
     `INSERT INTO users (email, password_hash, role) VALUES (${sql(email)}, ${sql(hashPassword(f.password))}, 'faculty') ON CONFLICT DO NOTHING;`,
-    `INSERT INTO faculty (user_id, employee_id, name, designation)
-       SELECT u.id, ${sql(f.employeeId)}, ${sql(f.name)}, ${sql(f.designation)} FROM users u WHERE u.email = ${sql(email)}
+    `INSERT INTO faculty (user_id, employee_id, name, designation, category)
+       SELECT u.id, ${sql(f.employeeId)}, ${sql(f.name)}, ${sql(f.designation)}, ${sql(f.category ?? "test_account")}
+         FROM users u WHERE u.email = ${sql(email)}
        ON CONFLICT DO NOTHING;`,
   );
 }
@@ -91,9 +130,9 @@ for (const s of data.students ?? []) {
   const email = s.email.trim().toLowerCase();
   out.push(
     `INSERT INTO users (email, password_hash, role) VALUES (${sql(email)}, ${sql(hashPassword(s.password))}, 'student') ON CONFLICT DO NOTHING;`,
-    `INSERT INTO students (user_id, roll_number, name, current_semester, program_id)
+    `INSERT INTO students (user_id, roll_number, name, current_semester, programme_id)
        SELECT u.id, ${sql(s.rollNumber)}, ${sql(s.name)}, ${sql(s.currentSemester)}, p.id
-         FROM users u, programs p WHERE u.email = ${sql(email)} AND p.code = ${sql(s.program)}
+         FROM users u, programmes p WHERE u.email = ${sql(email)} AND p.code = ${sql(s.programme)}
        ON CONFLICT DO NOTHING;`,
   );
 }
@@ -104,10 +143,11 @@ for (const o of data.offerings ?? []) {
        SELECT c.id, s.id, f.id, ${sql(o.section ?? "A")}
          FROM courses c, semesters s, faculty f
         WHERE c.code = ${sql(o.course)} AND s.number = ${sql(o.semester)}
-          AND s.academic_year = ${sql(o.academicYear)} AND f.employee_id = ${sql(o.faculty)}
+          AND s.academic_year = ${sql(o.academicYear)}
+          AND ${o.facultyKey ? `f.directory_key = ${sql(o.facultyKey)}` : `f.employee_id = ${sql(o.faculty)}`}
        ON CONFLICT DO NOTHING;`,
   );
-  for (const roll of o.students ?? []) {
+  for (const roll of rosterOf(o)) {
     out.push(
       `INSERT INTO enrollments (student_id, offering_id)
          SELECT st.id, ${offeringRef(o)} FROM students st WHERE st.roll_number = ${sql(roll)}
@@ -137,19 +177,21 @@ function demoAttendanceSql(data) {
     studentRate.set(s.rollNumber, Math.min(0.99, Math.max(0.5, presentRate + (rand() - 0.5) * 0.4)));
   }
 
-  for (const o of data.offerings ?? []) {
+  const slots = ["08:30", "10:00", "11:30", "13:00", "14:30", "16:00"];
+  (data.offerings ?? []).forEach((o, index) => {
     const start = startDates[`${o.semester}/${o.academicYear}`];
-    if (!start) continue;
+    if (!start) return;
+    const time = slots[index % slots.length];
     const dates = classDates(start, endDate, data.demoAttendance.maxSessions ?? 16);
     dates.forEach((date, i) => {
       const cancelled = i === 3; // one cancelled class per offering
       statements.push(
         `INSERT INTO attendance_sessions (offering_id, class_date, start_time, topic, status)
-           VALUES (${offeringRef(o)}, ${sql(date)}, '09:00', ${sql(`Lecture ${i + 1}`)}, ${sql(cancelled ? "cancelled" : "held")})
+           VALUES (${offeringRef(o)}, ${sql(date)}, ${sql(time)}, ${sql(`Lecture ${i + 1}`)}, ${sql(cancelled ? "cancelled" : "held")})
            ON CONFLICT DO NOTHING;`,
       );
       if (cancelled) return;
-      for (const roll of o.students ?? []) {
+      for (const roll of rosterOf(o)) {
         const status = rand() < (studentRate.get(roll) ?? presentRate) ? "present" : "absent";
         statements.push(
           `INSERT INTO attendance_records (session_id, enrollment_id, status)
@@ -157,13 +199,13 @@ function demoAttendanceSql(data) {
                FROM attendance_sessions a
                JOIN enrollments e ON e.offering_id = a.offering_id
                JOIN students st ON st.id = e.student_id
-              WHERE a.offering_id = ${offeringRef(o)} AND a.class_date = ${sql(date)} AND a.start_time = '09:00'
+              WHERE a.offering_id = ${offeringRef(o)} AND a.class_date = ${sql(date)} AND a.start_time = ${sql(time)}
                 AND st.roll_number = ${sql(roll)}
              ON CONFLICT DO NOTHING;`,
         );
       }
     });
-  }
+  });
   return statements;
 }
 

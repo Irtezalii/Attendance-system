@@ -44,7 +44,7 @@ interface FacultyOfferingRow extends OfferingRow {
 
 const FACULTY_OFFERING_SQL = `
   SELECT ${OFFERING_COLUMNS},
-    (SELECT COUNT(*) FROM enrollments e WHERE e.offering_id = co.id) AS enrolled_count,
+    (SELECT COUNT(*) FROM enrollments e WHERE e.offering_id = co.id AND e.status = 'enrolled') AS enrolled_count,
     (SELECT COUNT(*) FROM attendance_sessions a WHERE a.offering_id = co.id AND a.status = 'held') AS sessions_held,
     (SELECT COUNT(*) FROM attendance_records r JOIN attendance_sessions a ON a.id = r.session_id
       WHERE a.offering_id = co.id AND a.status = 'held') AS records_total,

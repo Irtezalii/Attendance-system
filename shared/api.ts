@@ -21,15 +21,30 @@ export interface StudentProfile {
   email: string;
   rollNumber: string;
   currentSemester: number;
-  program: { code: string; name: string };
+  programme: { code: string; name: string; semesterCount: number };
 }
+
+export type FacultyCategory =
+  | "full_time"
+  | "teaching_associate"
+  | "visiting"
+  | "inter_departmental"
+  | "compulsory_subjects"
+  | "test_account";
 
 export interface FacultyProfile {
   kind: "faculty";
   name: string;
+  /** Login email. */
   email: string;
-  employeeId: string;
-  designation: string;
+  employeeId: string | null;
+  designation: string | null;
+  department: string;
+  category: FacultyCategory;
+  /** Published directory contact, when different from the login email. */
+  officialEmail: string | null;
+  qualifications: string | null;
+  researchInterests: string | null;
 }
 
 export interface MeResponse {
@@ -48,8 +63,11 @@ export interface OfferingInfo {
 
 // ---- Student ----
 
+export type EnrollmentStatus = "enrolled" | "dropped";
+
 export interface StudentCourse extends OfferingInfo {
-  faculty: { name: string; designation: string };
+  faculty: { name: string; designation: string | null };
+  enrollmentStatus: EnrollmentStatus;
   summary: AttendanceSummary;
 }
 
@@ -70,6 +88,18 @@ export interface StudentAttendanceEntry {
 export interface StudentCourseDetailResponse {
   course: StudentCourse;
   entries: StudentAttendanceEntry[];
+}
+
+export interface StudentHistoryEntry extends StudentAttendanceEntry {
+  offeringId: number;
+  courseCode: string;
+  courseTitle: string;
+}
+
+export interface StudentHistoryResponse {
+  /** "current" = active semesters only; "all" = every semester. */
+  scope: "current" | "all";
+  entries: StudentHistoryEntry[];
 }
 
 // ---- Faculty ----
@@ -106,6 +136,14 @@ export interface FacultyOfferingDetailResponse {
   offering: FacultyOffering;
   students: OfferingStudent[];
   sessions: OfferingSession[];
+}
+
+export interface RecentSession extends OfferingSession {
+  offering: OfferingInfo;
+}
+
+export interface RecentSessionsResponse {
+  sessions: RecentSession[];
 }
 
 export interface SessionRecord {

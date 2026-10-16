@@ -1,0 +1,148 @@
+{
+  "programme": {
+    "code": "BSCS",
+    "name": "Bachelor of Science in Computer Science",
+    "semesterCount": 8
+  },
+  "curriculum": {
+    "version": "DCS-UoK BSCS curriculum (curbscs.pdf)",
+    "sourceUrl": "https://www.uok.edu.pk/faculties/computerscience/docs/curbscs.pdf",
+    "retrievedOn": "2026-10-16",
+    "statedTotalCourses": 47,
+    "statedTotalCredits": 138,
+    "notes": "Semester-wise course plan transcribed from the official PDF linked from https://www.uok.edu.pk/department-computerscience#bs. Credit values are as printed: total (theory+practical)."
+  },
+  "semesters": [
+    {
+      "number": 1,
+      "statedTotalCredits": 20,
+      "items": [
+        { "code": "CS-351", "title": "Programming Fundamentals", "credits": "4 (3+1)" },
+        { "code": "CS-353", "title": "Introduction to Information & Communication Technologies", "credits": "3 (3+0)" },
+        { "code": "CS-355", "title": "Calculus and Analytical Geometry", "credits": "3 (3+0)" },
+        { "code": "CS-357", "title": "Applied Physics", "credits": "3 (2+1)" },
+        { "code": "CS-359", "title": "Functional English", "credits": "3 (3+0)" },
+        { "code": "CS-361", "title": "Islamic Studies or Ethics", "credits": "2 (2+0)" },
+        { "code": "CS-363", "title": "Pakistan Studies", "credits": "2 (2+0)" }
+      ]
+    },
+    {
+      "number": 2,
+      "statedTotalCredits": 18,
+      "items": [
+        { "code": "CS-352", "title": "Object Oriented Concepts & Programming", "credits": "4 (3+1)" },
+        { "code": "CS-354", "title": "Digital Logic Design", "credits": "4 (2+1)" },
+        { "code": "CS-356", "title": "Linear Algebra", "credits": "3 (3+0)" },
+        { "code": "CS-358", "title": "Discrete Structures", "credits": "3 (3+0)" },
+        { "code": "CS-362", "title": "Ideology and Constitution of Pakistan", "credits": "2 (2+0)" },
+        { "code": "CS-364", "title": "Fehm e Quran", "credits": "2 (2+0)" }
+      ]
+    },
+    {
+      "number": 3,
+      "statedTotalCredits": 18,
+      "items": [
+        { "code": "CS-451", "title": "Data Structures and Applications", "credits": "4 (3+1)" },
+        { "code": "CS-453", "title": "Software Engineering Fundamentals", "credits": "3 (3+0)" },
+        { "code": "CS-455", "title": "Computer Organization & Assembly Language", "credits": "3 (2+1)" },
+        { "code": "CS-457", "title": "Multivariable Calculus", "credits": "3 (3+0)" },
+        { "code": "CS-459", "title": "Probability & Statistics", "credits": "3 (3+0)" },
+        { "code": "CS-461", "title": "Urdu", "credits": "2 (2+0)" }
+      ]
+    },
+    {
+      "number": 4,
+      "statedTotalCredits": 19,
+      "items": [
+        { "code": "CS-452", "title": "Database Management Systems", "credits": "4 (3+1)" },
+        { "code": "CS-454", "title": "Expository Writing", "credits": "3 (3+0)" },
+        { "code": "CS-456", "title": "Theory of Automata", "credits": "3 (3+0)" },
+        { "code": "CS-458", "title": "Software Project Management", "credits": "3 (3+0)" },
+        { "code": "CS-460", "title": "Data Communication and Networking", "credits": "3 (2+1)" },
+        { "code": "CS-462", "title": "Professional Practices", "credits": "3 (3+0)" }
+      ]
+    },
+    {
+      "number": 5,
+      "statedTotalCredits": 18,
+      "items": [
+        { "code": "CS-551", "title": "Artificial Intelligence", "credits": "3 (2+1)" },
+        { "code": "CS-553", "title": "Operating Systems", "credits": "4 (3+1)" },
+        { "code": "CS-555", "title": "HCI and Computer Graphics", "credits": "3 (2+1)" },
+        { "code": "CS-557", "title": "Information Security", "credits": "3 (2+1)" },
+        { "code": "CS-559", "title": "Civics and Community Engagement", "credits": "2 (2+0)" },
+        { "code": "CS-561", "title": "Cloud Computing", "credits": "3 (2+1)" }
+      ]
+    },
+    {
+      "number": 6,
+      "statedTotalCredits": 18,
+      "items": [
+        { "code": "CS-552", "title": "Advance Database Management Systems", "credits": "3 (2+1)" },
+        { "code": "CS-554", "title": "Compiler Construction", "credits": "3 (2+1)" },
+        { "code": "CS-556", "title": "Design and Analysis of Algorithms", "credits": "3 (3+0)" },
+        { "code": "CS-558", "title": "Financial Accounting", "credits": "3 (3+0)" },
+        { "slot": "Domain Elective-1", "placeholderCode": "CS-xxx", "credits": "3", "electiveGroup": "Domain Elective 1, 2" },
+        { "slot": "Domain Elective-2", "placeholderCode": "CS-xxx", "credits": "3", "electiveGroup": "Domain Elective 1, 2" }
+      ]
+    },
+    {
+      "number": 7,
+      "statedTotalCredits": 15,
+      "items": [
+        { "slot": "Domain Elective-3 (Topic of Current Interest)", "placeholderCode": "CS-xxx", "credits": "3 (2+1)", "electiveGroup": "Domain Elective 3, 4, 5" },
+        { "code": "CS-651", "title": "Parallel & Distributed Computing", "credits": "3 (2+1)" },
+        { "code": "CS-653", "title": "Entrepreneurship", "credits": "3 (3+0)" },
+        { "code": "CS-655", "title": "Final Year Project - I", "credits": "3 (0+3)" },
+        { "code": "CS-657", "title": "Internship", "credits": "3 (3+0)" }
+      ]
+    },
+    {
+      "number": 8,
+      "statedTotalCredits": 12,
+      "items": [
+        { "slot": "Domain Elective-4", "placeholderCode": "CS-xxx", "credits": "3 (2+1)", "electiveGroup": "Domain Elective 3, 4, 5" },
+        { "slot": "Domain Elective-5", "placeholderCode": "CS-xxx", "credits": "3 (2+1)", "electiveGroup": "Domain Elective 3, 4, 5" },
+        { "code": "CS-654", "title": "Professional Certification", "credits": "3 (0+3)" },
+        { "code": "CS-656", "title": "Final Year Project - II", "credits": "3 (0+3)" }
+      ]
+    }
+  ],
+  "electivePools": [
+    {
+      "group": "Domain Elective 1, 2",
+      "description": "Out of five domain elective courses two to be offered from this table in third year.",
+      "courses": [
+        { "code": "CS-572", "title": "Advanced Programming", "credits": "3 (2+1)" },
+        { "code": "CS-574", "title": "Mobile Applications Development", "credits": "3 (2+1)" },
+        { "code": "CS-575", "title": "Web Technologies", "credits": "3 (2+1)" },
+        { "code": "CS-576", "title": "Multimedia Systems", "credits": "3 (2+1)" },
+        { "code": "CS-577", "title": "Simulation and Digital Twins", "credits": "3 (2+1)" },
+        { "code": "CS-578", "title": "Object Oriented Analysis and Design", "credits": "3 (3+0)" }
+      ]
+    },
+    {
+      "group": "Domain Elective 3, 4, 5",
+      "description": "Out of five domain elective courses three to be offered from this table in fourth/final year (seventh and eighth semester). Domain Elective 3 is a Topic of Current Interest (offered from this list or any contemporary topic in the domain).",
+      "courses": [
+        { "code": "CS-671", "title": "Software Testing & Quality Assurance", "credits": "3 (3+0)" },
+        { "code": "CS-672", "title": "Advanced Computer Graphics", "credits": "3 (3+0)" },
+        { "code": "CS-673", "title": "Cyber Security", "credits": "3 (3+0)" },
+        { "code": "CS-674", "title": "Data Science", "credits": "3 (2+1)" },
+        { "code": "CS-675", "title": "Data Warehousing and Data Mining", "credits": "3 (2+1)" },
+        { "code": "CS-677", "title": "Web Engineering", "credits": "3 (2+1)" },
+        { "code": "CS-678", "title": "Natural Language Processing", "credits": "3 (3+0)" },
+        { "code": "CS-679", "title": "Neural Networks and Fuzzy Logic", "credits": "3 (3+0)" }
+      ]
+    }
+  ],
+  "sourceIssues": [
+    "The summary table states 47 courses, but its own category rows add up to 46 (16 + 5 + 5 + 4 + 15 + 1), and the semester plan lists 46 courses including elective slots. Credit hours agree: 138.",
+    "CS-354 Digital Logic Design is printed as 4 (2+1): the theory + practical breakdown (3) does not match the total (4). Stored as printed. The semester II total (18) is consistent with 4 credits.",
+    "The semester VIII total line is labelled \"Total Credits for Semester - VII\" in the source; the value (12) is the semester VIII total.",
+    "CS-552 is titled \"Advance Database Management Systems\"; BSSE uses \"Advanced\". Stored as printed.",
+    "CS-657 Internship is printed as 3 (3+0), while BSAI prints Internship as 3 (0+3). Stored as printed.",
+    "Elective slots CS-xxx have no official course code; they are stored as slots linked to their elective pool, not as courses.",
+    "Domain Elective-1 and Domain Elective-2 (semester VI) are printed with total credits only (3), no breakdown."
+  ]
+}

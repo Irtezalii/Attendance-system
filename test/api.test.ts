@@ -4,9 +4,11 @@ import type {
   FacultyOfferingDetailResponse,
   FacultyOfferingsResponse,
   MeResponse,
+  RecentSessionsResponse,
   SessionDetailResponse,
   StudentCourseDetailResponse,
   StudentCoursesResponse,
+  StudentHistoryResponse,
 } from "../shared/api";
 import { attendancePercentage } from "../shared/api";
 import { api, login, PASSWORD, seedFixture } from "./helpers";
@@ -73,7 +75,30 @@ describe("authentication", () => {
     expect(text).not.toContain("pbkdf2");
     const me = JSON.parse(text) as MeResponse;
     expect(me.user.role).toBe("student");
-    expect(me.profile).toMatchObject({ kind: "student", rollNumber: "R-1", currentSemester: 3, program: { code: "BSCS" } });
+    expect(me.profile).toMatchObject({
+      kind: "student",
+      rollNumber: "R-1",
+      currentSemester: 3,
+      programme: { code: "BSCS", semesterCount: 8 },
+    });
+  });
+
+  it("returns the faculty directory profile for professors", async () => {
+    const me = (await (await api("/auth/me", { cookie: profA })).json()) as MeResponse;
+    expect(me.user.role).toBe("faculty");
+    expect(me.profile).toMatchObject({ kind: "faculty", name: "Prof A", department: "Department of Computer Science" });
+  });
+
+  it("rejects faculty accounts whose profile is inactive", async () => {
+    const res = await api("/auth/login", { body: { email: "inactive.prof@test.edu", password: PASSWORD } });
+    expect(res.status).toBe(401);
+  });
+
+  it("revokes the previous session when signing in again from the same browser", async () => {
+    const first = await login("s3@test.edu");
+    const res = await api("/auth/login", { cookie: first, body: { email: "s3@test.edu", password: PASSWORD } });
+    expect(res.status).toBe(200);
+    expect((await api("/auth/me", { cookie: first })).status).toBe(401);
   });
 
   it("requires a session for protected endpoints", async () => {
@@ -141,6 +166,17 @@ describe("student dashboard", () => {
     ]);
   });
 
+  it("lists attendance across the student's own courses only", async () => {
+    const current = (await (await api("/student/attendance", { cookie: s2 })).json()) as StudentHistoryResponse;
+    expect(current.scope).toBe("current");
+    // s2 is only in offering 1 (4 sessions, one cancelled).
+    expect(new Set(current.entries.map((e) => e.offeringId))).toEqual(new Set([1]));
+    expect(current.entries).toHaveLength(4);
+
+    const all = (await (await api("/student/attendance?scope=all", { cookie: s1 })).json()) as StudentHistoryResponse;
+    expect(new Set(all.entries.map((e) => e.courseCode))).toEqual(new Set(["CS-1", "CS-2"]));
+  });
+
   it("cannot read a course the student is not enrolled in", async () => {
     expect((await api("/student/courses/2", { cookie: s2 })).status).toBe(404);
     expect((await api("/student/courses/999", { cookie: s2 })).status).toBe(404);
@@ -172,6 +208,13 @@ describe("faculty access control", () => {
         })
       ).status,
     ).toBe(404);
+  });
+
+  it("lists recent classes only from the professor's own offerings", async () => {
+    const a = (await (await api("/faculty/sessions", { cookie: profA })).json()) as RecentSessionsResponse;
+    const b = (await (await api("/faculty/sessions", { cookie: profB })).json()) as RecentSessionsResponse;
+    expect(new Set(a.sessions.map((s) => s.offering.offeringId))).toEqual(new Set([1]));
+    expect(b.sessions.map((s) => s.id)).toEqual([5]);
   });
 
   it("cannot view a student who is not in the offering", async () => {
@@ -242,6 +285,28 @@ describe("taking attendance", () => {
 
     expect((await api(`/faculty/sessions/${id}`, { method: "DELETE", cookie: profA })).status).toBe(200);
     expect((await api(`/faculty/sessions/${id}`, { cookie: profA })).status).toBe(404);
+  });
+
+  it("leaves dropped students out of the roster and attendance taking, but keeps their history", async () => {
+    // Student 3 is in offering 2 (prof B) as enrollment 4. Drop them.
+    await env.DB.prepare("UPDATE enrollments SET status = 'dropped' WHERE id = 4").run();
+    try {
+      const detail = (await (await api("/faculty/offerings/2", { cookie: profB })).json()) as FacultyOfferingDetailResponse;
+      expect(detail.students.map((s) => s.enrollmentId)).toEqual([3]);
+      expect(detail.offering.enrolledCount).toBe(1);
+
+      const withDropped = await api("/faculty/offerings/2/sessions", {
+        cookie: profB,
+        body: { classDate: today(), startTime: "07:00", records: [{ enrollmentId: 3, status: "present" }, { enrollmentId: 4, status: "present" }] },
+      });
+      expect(withDropped.status).toBe(400);
+
+      // Their existing mark in session 5 is still shown on that class.
+      const session = (await (await api("/faculty/sessions/5", { cookie: profB })).json()) as SessionDetailResponse;
+      expect(session.records.map((r) => r.enrollmentId)).toEqual([3, 4]);
+    } finally {
+      await env.DB.prepare("UPDATE enrollments SET status = 'enrolled' WHERE id = 4").run();
+    }
   });
 
   it("does not allow changes in a completed semester", async () => {

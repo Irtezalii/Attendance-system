@@ -1,0 +1,164 @@
+{
+  "programme": {
+    "code": "BSAI",
+    "name": "Bachelor of Science in Artificial Intelligence",
+    "semesterCount": 8
+  },
+  "curriculum": {
+    "version": "DCS-UoK BSAI curriculum (curbsai.pdf)",
+    "sourceUrl": "https://www.uok.edu.pk/faculties/computerscience/docs/curbsai.pdf",
+    "retrievedOn": "2026-10-16",
+    "statedTotalCourses": 47,
+    "statedTotalCredits": 141,
+    "notes": "Semester-wise course plan transcribed from the official PDF linked from https://www.uok.edu.pk/department-computerscience#bs. Credit values are as printed: total (theory+practical). Semester VII and VIII each offer Final Year (Capstone) Project or Thesis as alternatives."
+  },
+  "semesters": [
+    {
+      "number": 1,
+      "statedTotalCredits": 18,
+      "items": [
+        { "code": "AI-351", "title": "Programming Fundamentals", "credits": "4 (3+1)" },
+        { "code": "AI-353", "title": "Applications of Information & Communication Technologies", "credits": "3 (3+0)" },
+        { "code": "AI-355", "title": "Calculus and Analytical Geometry", "credits": "3 (3+0)" },
+        { "code": "AI-357", "title": "Applied Physics", "credits": "3 (2+1)" },
+        { "code": "AI-359", "title": "Functional English", "credits": "3 (3+0)" },
+        { "code": "AI-361", "title": "Islamic Studies or Ethics", "credits": "2 (2+0)" }
+      ]
+    },
+    {
+      "number": 2,
+      "statedTotalCredits": 20,
+      "items": [
+        { "code": "AI-352", "title": "Object Oriented Concepts & Programming", "credits": "4 (3+1)" },
+        { "code": "AI-354", "title": "Digital Logic Design", "credits": "3 (2+1)" },
+        { "code": "AI-356", "title": "Linear Algebra", "credits": "3 (3+0)" },
+        { "code": "AI-358", "title": "Discrete Structures", "credits": "3 (3+0)" },
+        { "code": "AI-360", "title": "Expository Writing", "credits": "3 (3+0)" },
+        { "code": "AI-362", "title": "Ideology and Constitution of Pakistan", "credits": "2 (2+0)" },
+        { "code": "AI-364", "title": "Pakistan Studies", "credits": "2 (2+0)" }
+      ]
+    },
+    {
+      "number": 3,
+      "statedTotalCredits": 18,
+      "items": [
+        { "code": "AI-451", "title": "Data Structures and Applications", "credits": "4 (3+1)" },
+        { "code": "AI-453", "title": "Software Engineering Fundamentals", "credits": "3 (3+0)" },
+        { "code": "AI-455", "title": "Computer Organization & Assembly Language", "credits": "3 (2+1)" },
+        { "code": "AI-457", "title": "Multivariable Calculus", "credits": "3 (3+0)" },
+        { "code": "AI-459", "title": "Probability & Statistics", "credits": "3 (3+0)" },
+        { "code": "AI-461", "title": "Urdu", "credits": "2 (2+0)" }
+      ]
+    },
+    {
+      "number": 4,
+      "statedTotalCredits": 15,
+      "items": [
+        { "code": "AI-452", "title": "Database Management Systems", "credits": "4 (3+1)" },
+        { "code": "AI-454", "title": "Artificial Intelligence", "credits": "3 (2+1)" },
+        { "slot": "Domain Elective-1", "placeholderCode": "AI-xxx", "credits": "3", "electiveGroup": "DE-1" },
+        { "code": "AI-444", "title": "Fehm e Quran", "credits": "2 (2+0)" },
+        { "code": "AI-456", "title": "Data Communication and Networking", "credits": "3 (2+1)" }
+      ]
+    },
+    {
+      "number": 5,
+      "statedTotalCredits": 17,
+      "items": [
+        { "code": "AI-551", "title": "Programming for AI", "credits": "3 (2+1)" },
+        { "code": "AI-553", "title": "Operating Systems", "credits": "3 (2+1)" },
+        { "code": "AI-555", "title": "Machine Learning", "credits": "3 (2+1)" },
+        { "code": "AI-561", "title": "Financial Accounting", "credits": "3 (3+0)" },
+        { "code": "AI-557", "title": "Information Security", "credits": "3 (2+1)" },
+        { "code": "AI-559", "title": "Civics and Community Engagement", "credits": "2 (2+0)" }
+      ]
+    },
+    {
+      "number": 6,
+      "statedTotalCredits": 18,
+      "items": [
+        { "code": "AI-552", "title": "Artificial Neural Networks & Deep Learning", "credits": "3 (2+1)" },
+        { "code": "AI-554", "title": "Professional Practices", "credits": "3 (2+1)" },
+        { "code": "AI-556", "title": "Design and Analysis of Algorithms", "credits": "3 (3+0)" },
+        { "code": "AI-558", "title": "Technical and Business Writing", "credits": "3 (3+0)" },
+        { "slot": "Domain Elective-2", "placeholderCode": "AI-xxx", "credits": "3", "electiveGroup": "DE-2, 3" },
+        { "slot": "Domain Elective-3", "placeholderCode": "AI-xxx", "credits": "3", "electiveGroup": "DE-2, 3" }
+      ]
+    },
+    {
+      "number": 7,
+      "statedTotalCredits": 15,
+      "items": [
+        { "code": "AI-610", "title": "Professional Certification", "credits": "3 (0+3)" },
+        { "slot": "Domain Elective-4", "placeholderCode": "AI-xxx", "credits": "3", "electiveGroup": "DE-4, 5" },
+        { "code": "AI-651", "title": "Computer Vision", "credits": "3 (2+1)" },
+        { "code": "AI-653", "title": "Internship", "credits": "3 (0+3)" },
+        { "code": "AI-655", "title": "Final Year (Capstone) Project - I", "credits": "3 (0+3)", "alternativeGroup": "BSAI-S7-capstone-or-thesis" },
+        { "code": "AI-657", "title": "Thesis - I", "credits": "3 (3+0)", "alternativeGroup": "BSAI-S7-capstone-or-thesis" }
+      ]
+    },
+    {
+      "number": 8,
+      "statedTotalCredits": 15,
+      "items": [
+        { "slot": "Domain Elective-5 (Topic of Current Interest)", "placeholderCode": "AI-xxx", "credits": "3", "electiveGroup": "DE-4, 5" },
+        { "code": "AI-652", "title": "Parallel & Distributed Computing", "credits": "3 (2+1)" },
+        { "code": "AI-660", "title": "Entrepreneurship", "credits": "3 (3+0)" },
+        { "code": "AI-654", "title": "Knowledge Representation and Reasoning", "credits": "3 (3+0)" },
+        { "code": "AI-656", "title": "Final Year (Capstone) Project - II", "credits": "3 (0+3)", "alternativeGroup": "BSAI-S8-capstone-or-thesis" },
+        { "code": "AI-658", "title": "Thesis - II", "credits": "3 (3+0)", "alternativeGroup": "BSAI-S8-capstone-or-thesis" }
+      ]
+    }
+  ],
+  "electivePools": [
+    {
+      "group": "DE-1",
+      "description": "Artificial Intelligence Domain Elective DE-1.",
+      "courses": [
+        { "code": "AI-471", "title": "Theory of Automata", "credits": "3 (3+0)" },
+        { "code": "AI-472", "title": "Numerical Analysis and Computing", "credits": "3 (3+0)" },
+        { "code": "AI-473", "title": "Simulation and Modeling", "credits": "3 (3+0)" }
+      ]
+    },
+    {
+      "group": "DE-2, 3",
+      "description": "Artificial Intelligence Domain Elective DE-2, 3.",
+      "courses": [
+        { "code": "AI-571", "title": "Operations Research", "credits": "3 (3+0)" },
+        { "code": "AI-572", "title": "Agent Based Simulation and Modeling", "credits": "3 (3+0)" },
+        { "code": "AI-573", "title": "Fuzzy Systems", "credits": "3 (3+0)" },
+        { "code": "AI-574", "title": "Reinforcement Learning", "credits": "3 (3+0)" },
+        { "code": "AI-575", "title": "Social Network Analysis", "credits": "3 (3+0)" },
+        { "code": "AI-576", "title": "Mobile Applications Development", "credits": "3 (2+1)" },
+        { "code": "AI-577", "title": "HCI & Computer Graphics", "credits": "3 (2+1)" },
+        { "code": "AI-578", "title": "Internet of Things", "credits": "3 (2+1)" }
+      ]
+    },
+    {
+      "group": "DE-4, 5",
+      "description": "Artificial Intelligence Domain Elective DE-4, 5. Domain Elective-5 is a Topic of Current Interest.",
+      "courses": [
+        { "code": "AI-671", "title": "Natural Language Processing", "credits": "3 (3+0)" },
+        { "code": "AI-672", "title": "Speech Processing", "credits": "3 (3+0)" },
+        { "code": "AI-673", "title": "Swarm Intelligence", "credits": "3 (3+0)" },
+        { "code": "AI-674", "title": "Data Warehousing and Data Mining", "credits": "3 (2+1)" },
+        { "code": "AI-675", "title": "Cyber Security", "credits": "3 (2+1)" },
+        { "code": "AI-676", "title": "Web Engineering", "credits": "3 (2+1)" },
+        { "code": "AI-677", "title": "Bioinformatics", "credits": "3 (3+0)" },
+        { "code": "AI-678", "title": "Complex Networks", "credits": "3 (3+0)" },
+        { "code": "AI-680", "title": "Topic of Current Interest (Domain Elective-5)", "credits": "3 (3+0)" }
+      ]
+    }
+  ],
+  "sourceIssues": [
+    "The summary table states 47 courses and 141 credit hours, but the semester plan adds up to 136 credit hours across 46 courses (counting each Project/Thesis alternative once). The domain core and domain elective headings elsewhere in the document use \"/137\".",
+    "The domain elective heading states \"(21/137) 7 Courses\", the summary table states 5 domain electives (15 credits), the semester plan has 5 elective slots, and the elective tables list 20 courses.",
+    "The General Education Requirement heading in this document reads \"BS - Software Engineering General Education Requirement (39/141)\", apparently copied from the BSSE document.",
+    "AI-444 Fehm e Quran (semester IV) and AI-610 Professional Certification (semester VII) are numbered outside their semester's sequence. Stored as printed.",
+    "Semester headings (\"Semester - I\" ...) are not present in the extracted text; semesters were assigned from each table's \"Total Credits for Semester - N\" line.",
+    "AI-354 Digital Logic Design is 3 (2+1) here, while the computing core list in the same document says Digital Logic Design 4 (3+1). AI-553 Operating Systems is 3 (2+1) here, while the computing core list says 4 (3+1). Semester-plan values are stored.",
+    "AI-353 is titled \"Applications of Information & Communication Technologies\" in the semester plan and \"Introduction to Information & Communication Technologies\" in the General Education list. Semester-plan title is stored.",
+    "Semester VII/VIII offer Final Year (Capstone) Project or Thesis as alternatives; they are stored with a shared alternative group. Thesis is printed 3 (3+0) and the Project 3 (0+3).",
+    "Elective slots AI-xxx have no official course code; they are stored as slots linked to their elective pool, not as courses. Slots are printed with total credits only (3)."
+  ]
+}

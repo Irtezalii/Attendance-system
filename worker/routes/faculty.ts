@@ -6,6 +6,7 @@ import type {
   FacultyOfferingDetailResponse,
   FacultyOfferingsResponse,
   OfferingStudent,
+  RecentSessionsResponse,
   SessionDetailResponse,
   SessionStatus,
   StudentInOfferingResponse,
@@ -13,7 +14,14 @@ import type {
 import { summarize } from "../../shared/api";
 import { requireAuth, type AppEnv } from "../lib/auth";
 import { HttpError, idParam, isUniqueViolation, parseBody } from "../lib/http";
-import { getOwnedOffering, listFacultyOfferings } from "../lib/queries";
+import {
+  getOwnedOffering,
+  listFacultyOfferings,
+  OFFERING_COLUMNS,
+  OFFERING_JOINS,
+  toOfferingInfo,
+  type OfferingRow,
+} from "../lib/queries";
 
 // ---- Validation ----
 
@@ -90,9 +98,10 @@ async function requireOwnedSession(c: Context<AppEnv>, sessionId: number) {
   return { session, offering };
 }
 
+/** Students currently enrolled (not dropped); only they can be marked. */
 async function enrollmentIds(db: D1Database, offeringId: number): Promise<Set<number>> {
   const { results } = await db
-    .prepare("SELECT id FROM enrollments WHERE offering_id = ?")
+    .prepare("SELECT id FROM enrollments WHERE offering_id = ? AND status = 'enrolled'")
     .bind(offeringId)
     .all<{ id: number }>();
   return new Set(results.map((r) => r.id));
@@ -139,11 +148,45 @@ export const facultyRoutes = new Hono<AppEnv>()
     };
     return c.json(body);
   })
+  .get("/sessions", async (c) => {
+    // Most recent classes across all of this professor's offerings.
+    const { results } = await c.env.DB.prepare(
+      `SELECT ${OFFERING_COLUMNS},
+         a.id, a.class_date, a.start_time, a.topic, a.status,
+         COUNT(CASE WHEN r.status = 'present' THEN 1 END) AS present,
+         COUNT(CASE WHEN r.status = 'absent' THEN 1 END) AS absent
+       FROM attendance_sessions a
+       JOIN course_offerings co ON co.id = a.offering_id
+       ${OFFERING_JOINS}
+       LEFT JOIN attendance_records r ON r.session_id = a.id
+       WHERE co.faculty_id = ?
+       GROUP BY a.id
+       ORDER BY a.class_date DESC, a.start_time DESC
+       LIMIT 200`,
+    )
+      .bind(c.get("auth").profileId)
+      .all<OfferingRow & SessionRow & { present: number; absent: number }>();
+    const body: RecentSessionsResponse = {
+      sessions: results.map((s) => ({
+        id: s.id,
+        classDate: s.class_date,
+        startTime: s.start_time,
+        topic: s.topic,
+        status: s.status,
+        present: s.present,
+        absent: s.absent,
+        offering: toOfferingInfo(s),
+      })),
+    };
+    return c.json(body);
+  })
   .get("/offerings/:offeringId", async (c) => {
     const offering = await requireOwnedOffering(c, idParam(c, "offeringId"));
     const db = c.env.DB;
     const [students, sessions] = await db.batch([
-      db.prepare(`${STUDENT_SUMMARY_SQL} GROUP BY e.id ORDER BY st.roll_number`).bind(offering.offeringId),
+      db
+        .prepare(`${STUDENT_SUMMARY_SQL} AND e.status = 'enrolled' GROUP BY e.id ORDER BY st.roll_number`)
+        .bind(offering.offeringId),
       db
         .prepare(
           `SELECT a.id, a.class_date, a.start_time, a.topic, a.status,
@@ -255,7 +298,8 @@ export const facultyRoutes = new Hono<AppEnv>()
          FROM enrollments e
          JOIN students st ON st.id = e.student_id
          LEFT JOIN attendance_records r ON r.enrollment_id = e.id AND r.session_id = ?
-        WHERE e.offering_id = ?
+        -- Current students, plus dropped students who already have a mark in this class.
+        WHERE e.offering_id = ? AND (e.status = 'enrolled' OR r.id IS NOT NULL)
         ORDER BY st.roll_number`,
     )
       .bind(session.id, offering.offeringId)
