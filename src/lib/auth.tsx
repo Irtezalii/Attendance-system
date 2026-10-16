@@ -5,6 +5,8 @@ import { ApiRequestError, apiRequest, SESSION_EXPIRED_EVENT } from "./api";
 interface AuthState {
   me: MeResponse | null;
   loading: boolean;
+  /** True when the server ended the session (expired or revoked) while the app was open. */
+  sessionExpired: boolean;
   login: (email: string, password: string) => Promise<MeResponse>;
   logout: () => Promise<void>;
 }
@@ -14,6 +16,7 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     apiRequest<MeResponse>("/auth/me")
@@ -23,7 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .finally(() => setLoading(false));
 
-    const onExpired = () => setMe(null);
+    const onExpired = () => {
+      setMe(null);
+      setSessionExpired(true);
+    };
     window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   }, []);
@@ -32,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await apiRequest("/auth/login", { body: { email, password } });
     const current = await apiRequest<MeResponse>("/auth/me");
     setMe(current);
+    setSessionExpired(false);
     return current;
   }, []);
 
@@ -40,10 +47,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("/auth/logout", { method: "POST" });
     } finally {
       setMe(null);
+      setSessionExpired(false);
     }
   }, []);
 
-  return <AuthContext.Provider value={{ me, loading, login, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ me, loading, sessionExpired, login, logout }}>{children}</AuthContext.Provider>
+  );
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

@@ -1,5 +1,48 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/source-serif-4";
 @import "tailwindcss";
 
-body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+/*
+ * KU / UBIT design tokens. Colours and fonts follow the University of Karachi website
+ * (uok.edu.pk): theme maroon #7c0405, title navy #081933, gold accent #d4af37,
+ * Source Serif 4 for headings and Inter for text. Fonts are self-hosted (CSP: 'self').
+ */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
+
+  --color-ku-maroon-50: #fbf3f3;
+  --color-ku-maroon-100: #f6e3e3;
+  --color-ku-maroon-200: #ebc2c2;
+  --color-ku-maroon-300: #d99494;
+  --color-ku-maroon-400: #c05a5a;
+  --color-ku-maroon-500: #a62a2a;
+  --color-ku-maroon-600: #921212;
+  --color-ku-maroon-700: #7c0405;
+  --color-ku-maroon-800: #620304;
+  --color-ku-maroon-900: #460203;
+
+  --color-ku-navy-50: #f1f4f9;
+  --color-ku-navy-100: #dfe6f1;
+  --color-ku-navy-700: #1d3559;
+  --color-ku-navy-800: #112645;
+  --color-ku-navy-900: #081933;
+
+  --color-ku-gold-100: #f8f0d4;
+  --color-ku-gold-400: #e0c35f;
+  --color-ku-gold-500: #d4af37;
+  --color-ku-gold-700: #8f7317;
+}
+
+/* In the base layer so utility classes (e.g. text-white on a heading) still win. */
+@layer base {
+  body {
+    @apply bg-slate-50 font-sans text-slate-800 antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-serif text-ku-navy-900;
+  }
 }

@@ -1,81 +1,108 @@
 import { Link } from "react-router";
-import type { FacultyOfferingsResponse } from "../../../shared/api";
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, PercentText, SemesterStatusPill } from "../../components/ui";
-import { buttonStyles } from "../../lib/styles";
+import type { FacultyOfferingsResponse, RecentSessionsResponse } from "../../../shared/api";
+import { RecentSessionsTable } from "../../components/RecentSessionsTable";
+import {
+  Card,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  PercentText,
+  SectionTitle,
+  StatCard,
+} from "../../components/ui";
 import { useAuth } from "../../lib/auth";
-import { groupBySemester } from "../../lib/format";
+import { offeringLabel, semesterLabel } from "../../lib/format";
+import { buttonStyles, linkStyles } from "../../lib/styles";
 import { useApi } from "../../lib/useApi";
 
 export function FacultyDashboard() {
   const { me } = useAuth();
-  const { data, error, loading, reload } = useApi<FacultyOfferingsResponse>("/faculty/offerings");
+  const offerings = useApi<FacultyOfferingsResponse>("/faculty/offerings");
+  const sessions = useApi<RecentSessionsResponse>("/faculty/sessions");
   if (!me || me.profile.kind !== "faculty") return null;
   const profile = me.profile;
+
+  const active = (offerings.data?.offerings ?? []).filter((o) => o.semester.status === "active");
+  const students = active.reduce((sum, o) => sum + o.enrolledCount, 0);
+  const classes = active.reduce((sum, o) => sum + o.sessionsHeld, 0);
+  const withData = active.filter((o) => o.averagePercentage !== null);
+  const average = withData.length
+    ? Math.round((withData.reduce((sum, o) => sum + (o.averagePercentage ?? 0), 0) / withData.length) * 100) / 100
+    : null;
 
   return (
     <>
       <PageHeader
+        eyebrow={profile.department}
         title={`Welcome, ${profile.name}`}
-        subtitle={`${profile.designation} · Employee ID ${profile.employeeId} · ${profile.email}`}
+        subtitle={[profile.designation, profile.employeeId && `Employee ID ${profile.employeeId}`].filter(Boolean).join(" · ")}
+        actions={
+          <Link to="/faculty/take-attendance" className={buttonStyles.primary}>
+            Take attendance
+          </Link>
+        }
       />
 
-      {loading && <LoadingState label="Loading your courses…" />}
-      {error && <ErrorState error={error} onRetry={reload} />}
-      {data && data.offerings.length === 0 && (
-        <EmptyState title="No courses are assigned to you yet.">
-          Contact the administration office to have courses assigned.
-        </EmptyState>
-      )}
+      {offerings.loading && <LoadingState label="Loading your courses…" />}
+      {offerings.error && <ErrorState error={offerings.error} onRetry={offerings.reload} />}
 
-      {data &&
-        groupBySemester(data.offerings).map((group) => (
-          <section key={group.label} className="mb-10">
-            <div className="mb-3 flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-slate-900">{group.label}</h2>
-              <SemesterStatusPill status={group.status} />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {group.items.map((o) => (
-                <Card key={o.offeringId} className="flex flex-col p-5">
-                  <p className="text-xs font-medium text-indigo-600">
-                    {o.courseCode} · Section {o.section}
-                  </p>
-                  <h3 className="mt-1 font-semibold text-slate-900">{o.courseTitle}</h3>
-                  <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <dt className="text-xs text-slate-500">Students</dt>
-                      <dd className="font-semibold text-slate-900">{o.enrolledCount}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-slate-500">Classes</dt>
-                      <dd className="font-semibold text-slate-900">{o.sessionsHeld}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-slate-500">Average</dt>
-                      <dd className="font-semibold">
-                        {o.averagePercentage === null ? (
-                          <span className="text-slate-400">—</span>
-                        ) : (
+      {offerings.data && (
+        <>
+          <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatCard label="Active courses" value={active.length} />
+            <StatCard label="Students" value={students} hint="Across active courses" />
+            <StatCard label="Classes held" value={classes} hint="This semester" />
+            <StatCard
+              label="Average attendance"
+              value={<PercentText value={average} className={average === null ? "text-base" : ""} />}
+              hint="Mean of course averages"
+            />
+          </div>
+
+          <section className="mb-10">
+            <SectionTitle aside={<Link to="/faculty/courses" className={`${linkStyles} ml-auto text-sm`}>All courses →</Link>}>
+              {active[0] ? `Teaching now · ${semesterLabel(active[0]).replace(/^Semester \d+ · /, "")}` : "Teaching now"}
+            </SectionTitle>
+            {active.length === 0 ? (
+              <EmptyState title="You have no courses in an active semester.">
+                Past courses are listed under <Link to="/faculty/courses" className={linkStyles}>My Courses</Link>.
+              </EmptyState>
+            ) : (
+              <Card>
+                <ul className="divide-y divide-slate-100">
+                  {active.map((o) => (
+                    <li key={o.offeringId} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <Link to={`/faculty/offerings/${o.offeringId}`} className="font-medium text-ku-navy-900 hover:text-ku-maroon-700">
+                          {offeringLabel(o)}
+                        </Link>
+                        <p className="text-xs text-slate-500">
+                          Semester {o.semester.number} · {o.enrolledCount} students · {o.sessionsHeld} classes ·{" "}
                           <PercentText value={o.averagePercentage} />
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
-                  <div className="mt-5 flex gap-2 pt-1">
-                    <Link to={`/faculty/offerings/${o.offeringId}`} className={`${buttonStyles.secondary} flex-1`}>
-                      View
-                    </Link>
-                    {o.semester.status !== "completed" && (
-                      <Link to={`/faculty/offerings/${o.offeringId}/sessions/new`} className={`${buttonStyles.primary} flex-1`}>
+                        </p>
+                      </div>
+                      <Link to={`/faculty/offerings/${o.offeringId}/sessions/new`} className={`${buttonStyles.secondary} shrink-0`}>
                         Take attendance
                       </Link>
-                    )}
-                  </div>
-                </Card>
-              ))}
-            </div>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
           </section>
-        ))}
+
+          <section>
+            <SectionTitle aside={<Link to="/faculty/records" className={`${linkStyles} ml-auto text-sm`}>All records →</Link>}>
+              Recent classes
+            </SectionTitle>
+            {sessions.loading && <LoadingState />}
+            {sessions.error && <ErrorState error={sessions.error} onRetry={sessions.reload} />}
+            {sessions.data && sessions.data.sessions.length === 0 && <EmptyState title="No classes recorded yet." />}
+            {sessions.data && sessions.data.sessions.length > 0 && <RecentSessionsTable sessions={sessions.data.sessions.slice(0, 6)} />}
+          </section>
+        </>
+      )}
     </>
   );
 }

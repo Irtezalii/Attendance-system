@@ -19,7 +19,7 @@ export function EditSession() {
       {data ? (
         <BackLink to={`/faculty/offerings/${data.offering.offeringId}`}>Back to course</BackLink>
       ) : (
-        <BackLink to="/faculty">My courses</BackLink>
+        <BackLink to="/faculty/courses">My Courses</BackLink>
       )}
       {loading && !data && <LoadingState />}
       {error && <ErrorState error={error} onRetry={reload} />}
@@ -136,7 +136,7 @@ function EditSessionForm({ data, notice, onSaved }: FormProps) {
       <AttendanceSheet students={records} marks={marks} onChange={setMarks} readOnly={readOnly} />
 
       {error ? (
-        <p role="alert" className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </p>
       ) : (

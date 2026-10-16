@@ -23,7 +23,7 @@ export function StudentAttendance() {
             subtitle={`${data.student.rollNumber} · ${offeringLabel(data.offering)} · ${semesterLabel(data.offering)}`}
           />
           <SummaryStats summary={data.student.summary} />
-          <h2 className="mb-3 text-lg font-semibold text-slate-900">Attendance by date</h2>
+          <h2 className="mb-3 text-lg font-semibold text-ku-navy-900">Attendance by date</h2>
           <AttendanceHistory entries={data.entries} />
         </>
       )}

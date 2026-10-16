@@ -15,7 +15,7 @@ export function OfferingDetail() {
 
   return (
     <>
-      <BackLink to="/faculty">My courses</BackLink>
+      <BackLink to="/faculty/courses">My Courses</BackLink>
       {loading && <LoadingState />}
       {error && <ErrorState error={error} onRetry={reload} />}
       {data && (
@@ -53,7 +53,7 @@ export function OfferingDetail() {
                 aria-selected={tab === t}
                 onClick={() => setTab(t)}
                 className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-                  tab === t ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 hover:text-slate-800"
+                  tab === t ? "border-ku-maroon-700 text-ku-maroon-700" : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
                 {t === "students" ? `Students (${data.students.length})` : `Classes (${data.sessions.length})`}
@@ -90,7 +90,7 @@ function StudentsTable({ data }: { data: FacultyOfferingDetailResponse }) {
               <td className="px-4 py-3">
                 <Link
                   to={`/faculty/offerings/${data.offering.offeringId}/students/${s.enrollmentId}`}
-                  className="font-medium text-slate-900 hover:text-indigo-600"
+                  className="font-medium text-ku-navy-900 hover:text-ku-maroon-700"
                 >
                   {s.name}
                 </Link>
@@ -138,7 +138,7 @@ function SessionsTable({ data }: { data: FacultyOfferingDetailResponse }) {
               <td className="px-4 py-3 text-right">{s.present}</td>
               <td className="px-4 py-3 text-right">{s.absent}</td>
               <td className="px-4 py-3 text-right">
-                <Link to={`/faculty/sessions/${s.id}`} className="font-medium text-indigo-600 hover:text-indigo-800">
+                <Link to={`/faculty/sessions/${s.id}`} className="font-medium text-ku-maroon-700 hover:text-ku-maroon-900">
                   {data.offering.semester.status === "completed" ? "View" : "View / edit"}
                 </Link>
               </td>

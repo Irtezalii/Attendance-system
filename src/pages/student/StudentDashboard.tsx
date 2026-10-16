@@ -1,124 +1,124 @@
 import { Link } from "react-router";
-import type { StudentCourse, StudentCoursesResponse } from "../../../shared/api";
+import type { StudentCoursesResponse, StudentHistoryResponse } from "../../../shared/api";
+import { attendancePercentage } from "../../../shared/api";
+import { CourseCards } from "../../components/StudentCourseViews";
 import {
+  AttendancePill,
   Card,
   EmptyState,
   ErrorState,
   LoadingState,
   PageHeader,
   PercentText,
-  ProgressBar,
-  SemesterStatusPill,
+  ProgrammeBadge,
+  SectionTitle,
+  StatCard,
 } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
-import { ATTENDANCE_THRESHOLD, groupBySemester } from "../../lib/format";
+import { ATTENDANCE_THRESHOLD, formatDate, semesterLabel } from "../../lib/format";
+import { linkStyles } from "../../lib/styles";
 import { useApi } from "../../lib/useApi";
 
 export function StudentDashboard() {
   const { me } = useAuth();
-  const { data, error, loading, reload } = useApi<StudentCoursesResponse>("/student/courses");
+  const courses = useApi<StudentCoursesResponse>("/student/courses");
+  const history = useApi<StudentHistoryResponse>("/student/attendance");
   if (!me || me.profile.kind !== "student") return null;
   const profile = me.profile;
+
+  const current = (courses.data?.courses ?? []).filter((c) => c.semester.status === "active" && c.enrollmentStatus === "enrolled");
+  const held = current.reduce((sum, c) => sum + c.summary.held, 0);
+  const attended = current.reduce((sum, c) => sum + c.summary.attended, 0);
+  const low = current.filter((c) => c.summary.percentage !== null && c.summary.percentage < ATTENDANCE_THRESHOLD);
+  const recent = (history.data?.entries ?? []).slice(0, 6);
 
   return (
     <>
       <PageHeader
+        eyebrow={profile.programme.name}
         title={`Welcome, ${profile.name}`}
-        subtitle={`${profile.program.name} · Roll No. ${profile.rollNumber} · Semester ${profile.currentSemester}`}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            <ProgrammeBadge code={profile.programme.code} />
+            Roll No. {profile.rollNumber} · Semester {profile.currentSemester} of {profile.programme.semesterCount}
+          </span>
+        }
       />
 
-      {loading && <LoadingState label="Loading your courses…" />}
-      {error && <ErrorState error={error} onRetry={reload} />}
-      {data && data.courses.length === 0 && (
-        <EmptyState title="You are not enrolled in any courses yet.">
-          Contact the administration office if this looks wrong.
-        </EmptyState>
-      )}
+      {courses.loading && <LoadingState label="Loading your courses…" />}
+      {courses.error && <ErrorState error={courses.error} onRetry={courses.reload} />}
 
-      {data &&
-        groupBySemester(data.courses).map((group, index) => (
-          <section key={group.label} className="mb-10">
-            <div className="mb-3 flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-slate-900">{group.label}</h2>
-              <SemesterStatusPill status={group.status} />
+      {courses.data && (
+        <>
+          <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatCard label="Current courses" value={current.length} />
+            <StatCard
+              label="Overall attendance"
+              value={<PercentText value={attendancePercentage(attended, held)} className={held === 0 ? "text-base" : ""} />}
+              hint="Current semester"
+            />
+            <StatCard label="Classes missed" value={held - attended} hint={`of ${held} held`} />
+            <StatCard label={`Below ${ATTENDANCE_THRESHOLD}%`} value={low.length} hint={low.length === 1 ? "course" : "courses"} />
+          </div>
+
+          {low.length > 0 && (
+            <div role="status" className="mb-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <p className="font-medium">Attendance below {ATTENDANCE_THRESHOLD}% in:</p>
+              <ul className="mt-1 list-inside list-disc">
+                {low.map((c) => (
+                  <li key={c.offeringId}>
+                    <Link to={`/student/courses/${c.offeringId}`} className="underline">
+                      {c.courseCode} {c.courseTitle}
+                    </Link>{" "}
+                    ({c.summary.percentage}%)
+                  </li>
+                ))}
+              </ul>
             </div>
-            {index === 0 ? <CourseCards courses={group.items} /> : <CourseTable courses={group.items} />}
-          </section>
-        ))}
+          )}
 
-      {data && data.courses.length > 0 && (
-        <p className="text-xs text-slate-500">
-          Attendance = classes attended ÷ classes held. Cancelled classes are not counted. Below {ATTENDANCE_THRESHOLD}% is
-          highlighted.
-        </p>
+          <section className="mb-10">
+            <SectionTitle aside={<Link to="/student/courses" className={`${linkStyles} ml-auto text-sm`}>All courses →</Link>}>
+              {current[0] ? semesterLabel(current[0]) : "Current semester"}
+            </SectionTitle>
+            {current.length === 0 ? (
+              <EmptyState title="You have no courses in the current semester.">
+                Past semesters are listed under <Link to="/student/courses" className={linkStyles}>My Courses</Link>.
+              </EmptyState>
+            ) : (
+              <CourseCards courses={current} />
+            )}
+          </section>
+
+          <section>
+            <SectionTitle aside={<Link to="/student/history" className={`${linkStyles} ml-auto text-sm`}>Full history →</Link>}>
+              Recent classes
+            </SectionTitle>
+            {history.loading && <LoadingState />}
+            {history.error && <ErrorState error={history.error} onRetry={history.reload} />}
+            {history.data && recent.length === 0 && <EmptyState title="No attendance recorded yet this semester." />}
+            {recent.length > 0 && (
+              <Card>
+                <ul className="divide-y divide-slate-100">
+                  {recent.map((e) => (
+                    <li key={e.sessionId} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-ku-navy-900">
+                          {e.courseCode} · {e.courseTitle}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {formatDate(e.classDate)} · {e.startTime}
+                        </p>
+                      </div>
+                      <AttendancePill status={e.status} sessionStatus={e.sessionStatus} />
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+          </section>
+        </>
       )}
     </>
-  );
-}
-
-function CourseCards({ courses }: { courses: StudentCourse[] }) {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {courses.map((course) => (
-        <Link key={course.offeringId} to={`/student/courses/${course.offeringId}`} className="group">
-          <Card className="h-full p-5 transition group-hover:border-indigo-300 group-hover:shadow-md">
-            <p className="text-xs font-medium text-indigo-600">{course.courseCode}</p>
-            <h3 className="mt-1 font-semibold text-slate-900">{course.courseTitle}</h3>
-            <p className="mt-0.5 text-sm text-slate-500">{course.faculty.name}</p>
-            <div className="mt-4 flex items-baseline justify-between">
-              <PercentText
-                value={course.summary.percentage}
-                className={course.summary.percentage === null ? "text-sm" : "text-2xl font-semibold"}
-              />
-              <span className="text-xs text-slate-500">
-                {course.summary.attended} / {course.summary.held} attended
-              </span>
-            </div>
-            <div className="mt-2">
-              <ProgressBar value={course.summary.percentage} />
-            </div>
-            <p className="mt-3 text-xs text-slate-500">
-              {course.summary.missed} missed · {course.creditHours} credit hours
-            </p>
-          </Card>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-function CourseTable({ courses }: { courses: StudentCourse[] }) {
-  return (
-    <Card className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-          <tr>
-            <th className="px-4 py-3 font-medium">Course</th>
-            <th className="px-4 py-3 text-right font-medium">Classes held</th>
-            <th className="px-4 py-3 text-right font-medium">Attended</th>
-            <th className="px-4 py-3 text-right font-medium">Missed</th>
-            <th className="px-4 py-3 text-right font-medium">Attendance</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {courses.map((course) => (
-            <tr key={course.offeringId} className="hover:bg-slate-50">
-              <td className="px-4 py-3">
-                <Link to={`/student/courses/${course.offeringId}`} className="font-medium text-slate-900 hover:text-indigo-600">
-                  {course.courseTitle}
-                </Link>
-                <p className="text-xs text-slate-500">{course.courseCode}</p>
-              </td>
-              <td className="px-4 py-3 text-right">{course.summary.held}</td>
-              <td className="px-4 py-3 text-right">{course.summary.attended}</td>
-              <td className="px-4 py-3 text-right">{course.summary.missed}</td>
-              <td className="px-4 py-3 text-right font-medium">
-                <PercentText value={course.summary.percentage} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Card>
   );
 }
