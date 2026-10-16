@@ -1,148 +1,83 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import cloudflareLogo from './assets/cloudflare.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import type { ReactNode } from "react";
+import { Link, Navigate, Route, Routes, useLocation } from "react-router";
+import type { Role } from "../shared/api";
+import { Layout } from "./components/Layout";
+import { LoadingState } from "./components/ui";
+import { useAuth } from "./lib/auth";
+import { LoginPage } from "./pages/LoginPage";
+import { EditSession } from "./pages/faculty/EditSession";
+import { FacultyDashboard } from "./pages/faculty/FacultyDashboard";
+import { NewSession } from "./pages/faculty/NewSession";
+import { OfferingDetail } from "./pages/faculty/OfferingDetail";
+import { StudentAttendance } from "./pages/faculty/StudentAttendance";
+import { StudentCourseDetail } from "./pages/student/StudentCourseDetail";
+import { StudentDashboard } from "./pages/student/StudentDashboard";
 
-function App() {
-  const [count, setCount] = useState(0)
-  const [name, setName] = useState('unknown')
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started with Cloudflare</h1>
-          <p>
-            Edit <code>src/App.tsx</code> or <code>worker/index.ts</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <ul style={{ display: 'flex', gap: '1rem', listStyle: 'none', padding: 0 }}>
-          <li>
-            <button
-              className="counter"
-              onClick={() => setCount((count) => count + 1)}
-            >
-              Count is {count}
-            </button>
-          </li>
-          <li>
-          <button
-            className="counter"
-            onClick={() => {
-              fetch('/api/')
-                .then((res) => res.json())
-                .then((data) => setName(data.name))
-            }}
-            aria-label='get name'
-          >
-            Name from API is: {name}
-          </button>
-          </li>
-        </ul>
-
-
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-            <li>
-              <a href="https://workers.cloudflare.com/" target="_blank">
-                <img className="button-icon" src={cloudflareLogo} alt="" />
-                Workers Docs
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+/**
+ * Client-side guard for navigation only. The Worker enforces every permission
+ * itself; this just keeps users on pages that match their role.
+ */
+function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
+  const { me, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <LoadingState />;
+  if (!me) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (me.user.role !== role) return <Navigate to={me.user.role === "student" ? "/student" : "/faculty"} replace />;
+  return <>{children}</>;
 }
 
-export default App
+function HomeRedirect() {
+  const { me, loading } = useAuth();
+  if (loading) return <LoadingState />;
+  if (!me) return <Navigate to="/login" replace />;
+  return <Navigate to={me.user.role === "student" ? "/student" : "/faculty"} replace />;
+}
+
+function NotFound() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-2 text-center">
+      <h1 className="text-2xl font-semibold text-slate-900">Page not found</h1>
+      <Link to="/" className="text-indigo-600 hover:underline">
+        Go to your dashboard
+      </Link>
+    </div>
+  );
+}
+
+export default function App() {
+  const { loading } = useAuth();
+  if (loading) return <LoadingState />;
+
+  return (
+    <Routes>
+      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/student"
+        element={
+          <RequireRole role="student">
+            <Layout />
+          </RequireRole>
+        }
+      >
+        <Route index element={<StudentDashboard />} />
+        <Route path="courses/:offeringId" element={<StudentCourseDetail />} />
+      </Route>
+      <Route
+        path="/faculty"
+        element={
+          <RequireRole role="faculty">
+            <Layout />
+          </RequireRole>
+        }
+      >
+        <Route index element={<FacultyDashboard />} />
+        <Route path="offerings/:offeringId" element={<OfferingDetail />} />
+        <Route path="offerings/:offeringId/sessions/new" element={<NewSession />} />
+        <Route path="offerings/:offeringId/students/:enrollmentId" element={<StudentAttendance />} />
+        <Route path="sessions/:sessionId" element={<EditSession />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}

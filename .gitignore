@@ -29,3 +29,7 @@ dist-ssr
 !.dev.vars.example
 .env*
 !.env.example
+
+# Real seed data (student/faculty records, passwords) and generated seed SQL
+scripts/data/
+*.seed.sql
