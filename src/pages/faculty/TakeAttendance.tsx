@@ -75,7 +75,7 @@ export function TakeAttendance() {
                     </p>
                   </div>
                   <Link
-                    to={`/faculty/offerings/${o.offeringId}/sessions/new`}
+                    to={`/faculty/offerings/${o.offeringId}/live`}
                     className={`${buttonStyles.primary} shrink-0`}
                     aria-label={`Take attendance for ${o.courseCode} ${o.courseTitle}, ${shiftLabel(o.shift)}`}
                   >

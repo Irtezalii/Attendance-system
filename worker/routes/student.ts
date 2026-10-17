@@ -1,5 +1,7 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import type {
+  CheckInResponse,
   AttendanceStatus,
   EnrollmentStatus,
   SessionStatus,
@@ -10,7 +12,7 @@ import type {
 } from "../../shared/api";
 import { summarize } from "../../shared/api";
 import { requireAuth, type AppEnv } from "../lib/auth";
-import { HttpError, idParam } from "../lib/http";
+import { HttpError, idParam, parseBody } from "../lib/http";
 import { OFFERING_COLUMNS, OFFERING_JOINS, OFFERING_ORDER, toOfferingInfo, type OfferingRow } from "../lib/queries";
 
 interface StudentCourseRow extends OfferingRow {
@@ -46,8 +48,71 @@ function toStudentCourse(row: StudentCourseRow): StudentCourse {
   };
 }
 
+const checkInSchema = z.object({ code: z.string().trim().regex(/^\d{4}$/, "Enter the 4-digit code from your professor.") });
+
 export const studentRoutes = new Hono<AppEnv>()
   .use(requireAuth("student"))
+  // Mark yourself present with the professor's live code.
+  .post("/check-in", async (c) => {
+    const { code } = await parseBody(c, checkInSchema);
+    const auth = c.get("auth");
+    const { success } = await c.env.CHECKIN_LIMITER.limit({ key: `user:${auth.userId}` });
+    if (!success) throw new HttpError(429, "Too many attempts. Please wait a minute and try again.");
+
+    const db = c.env.DB;
+    const now = Date.now();
+    // One statement validates and records: the code must be active and unexpired, and the
+    // student must be enrolled (status 'enrolled') in that exact offering — which already fixes
+    // programme, semester, section and Morning/Evening. Only an untouched Absent mark is changed.
+    const recorded = await db
+      .prepare(
+        `UPDATE attendance_records SET status = 'present', checked_in_at = ?
+          WHERE checked_in_at IS NULL AND status = 'absent'
+            AND (session_id, enrollment_id) = (
+              SELECT a.id, e.id
+                FROM attendance_sessions a
+                JOIN enrollments e ON e.offering_id = a.offering_id
+               WHERE a.code = ? AND a.code_status = 'active' AND a.code_expires_at > ?
+                 AND e.student_id = ? AND e.status = 'enrolled')
+          RETURNING session_id`,
+      )
+      .bind(now, code, now, auth.profileId)
+      .first<{ session_id: number }>();
+
+    if (!recorded) {
+      const existing = await db
+        .prepare(
+          `SELECT r.id FROM attendance_records r
+             JOIN attendance_sessions a ON a.id = r.session_id
+             JOIN enrollments e ON e.id = r.enrollment_id
+            WHERE a.code = ? AND a.code_status = 'active' AND a.code_expires_at > ?
+              AND e.student_id = ? AND r.status = 'present'`,
+        )
+        .bind(code, now, auth.profileId)
+        .first();
+      if (existing) throw new HttpError(409, "Your attendance for this class is already recorded.");
+      // Same answer for wrong, expired, deactivated, or another class's code.
+      throw new HttpError(400, "This code is not valid for any of your classes right now.");
+    }
+
+    const info = await db
+      .prepare(
+        `SELECT c.code AS course_code, c.title AS course_title, a.class_date, a.start_time
+           FROM attendance_sessions a
+           JOIN course_offerings co ON co.id = a.offering_id
+           JOIN courses c ON c.id = co.course_id
+          WHERE a.id = ?`,
+      )
+      .bind(recorded.session_id)
+      .first<{ course_code: string; course_title: string; class_date: string; start_time: string }>();
+    const body: CheckInResponse = {
+      courseCode: info!.course_code,
+      courseTitle: info!.course_title,
+      classDate: info!.class_date,
+      startTime: info!.start_time,
+    };
+    return c.json(body);
+  })
   .get("/courses", async (c) => {
     const { results } = await c.env.DB.prepare(`${STUDENT_COURSE_SQL} GROUP BY e.id ORDER BY ${OFFERING_ORDER}`)
       .bind(c.get("auth").profileId)

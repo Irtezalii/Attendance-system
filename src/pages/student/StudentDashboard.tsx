@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import type { StudentCoursesResponse, StudentHistoryResponse } from "../../../shared/api";
 import { attendancePercentage } from "../../../shared/api";
+import { CheckInCard } from "../../components/CheckInCard";
 import { CourseCards } from "../../components/StudentCourseViews";
 import {
   AttendancePill,
@@ -49,6 +50,13 @@ export function StudentDashboard() {
 
       {courses.loading && <LoadingState label="Loading your courses…" />}
       {courses.error && <ErrorState error={courses.error} onRetry={courses.reload} />}
+
+      <CheckInCard
+        onRecorded={() => {
+          courses.reload();
+          history.reload();
+        }}
+      />
 
       {courses.data && (
         <>

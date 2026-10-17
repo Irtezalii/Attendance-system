@@ -25,7 +25,7 @@ export function OfferingDetail() {
             subtitle={`${offeringContext(data.offering)} · ${data.offering.creditHours} credit hours`}
             actions={
               data.offering.semester.status !== "completed" && (
-                <Link to={`/faculty/offerings/${data.offering.offeringId}/sessions/new`} className={buttonStyles.primary}>
+                <Link to={`/faculty/offerings/${data.offering.offeringId}/live`} className={buttonStyles.primary}>
                   Take attendance
                 </Link>
               )

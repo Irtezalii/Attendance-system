@@ -11,7 +11,7 @@ interface NavItem {
   match?: (pathname: string) => boolean;
 }
 
-const isNewClass = (p: string) => /^\/faculty\/offerings\/\d+\/sessions\/new$/.test(p);
+const isNewClass = (p: string) => /^\/faculty\/offerings\/\d+\/(sessions\/new|live)$/.test(p);
 
 const NAV: Record<Role, NavItem[]> = {
   student: [

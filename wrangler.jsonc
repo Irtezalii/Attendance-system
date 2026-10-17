@@ -42,8 +42,18 @@
 			"name": "LOGIN_IP_LIMITER",
 			"namespace_id": "1002",
 			"simple": { "limit": 30, "period": 60 }
+		},
+		// Student attendance-code attempts per account (stops guessing 4-digit codes).
+		{
+			"name": "CHECKIN_LIMITER",
+			"namespace_id": "1003",
+			"simple": { "limit": 6, "period": 60 }
 		}
-	]
+	],
+	// Timezone used for class dates/times of live attendance codes.
+	"vars": {
+		"APP_TIMEZONE": "Asia/Karachi"
+	}
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

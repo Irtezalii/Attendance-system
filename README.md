@@ -128,6 +128,18 @@ Institution names shown in the UI are in the same file. Colours (KU maroon `#7c0
 - `course_offerings`: course × semester × section → professor. `enrollments`: student × offering, `enrolled` / `dropped`.
 - `attendance_sessions` (held / cancelled) and `attendance_records` (present / absent, one per session × enrollment; a trigger rejects enrollments from another offering).
 
+### Live attendance codes
+
+**Take Attendance → Take attendance** opens the attendance window for that exact course offering (programme, schedule, semester, section).
+
+- **Take New Attendance** creates today's class with a 4-digit code valid for 10 minutes. Every enrolled student starts as Absent.
+- Students enter the code under **Mark attendance** on their dashboard, which marks them Present.
+- **Extend +5 min** and **Stop attendance** control the code. The same can be typed as `Start`, `Extend-1234` or `Deactivate-1234`.
+- The server enforces all of this. A code only works for students enrolled in that offering: same programme, semester, section and Morning/Evening. It stops working the moment it expires or is stopped.
+- Students get 6 attempts per minute.
+- Class dates and times use `APP_TIMEZONE` in `wrangler.jsonc` (`Asia/Karachi`).
+- Marks can still be corrected afterwards from the class page.
+
 ### Attendance rules
 
 `percentage = attended / held × 100`, rounded to 2 decimals and always computed from the records. Present counts as attended, absent does not. Cancelled classes do not count. With no classes held the UI shows "No attendance recorded". There is no Late status: a late arrival is marked Present or Absent by the professor. Completed semesters are read-only. Dropped students leave the roster but keep their history.

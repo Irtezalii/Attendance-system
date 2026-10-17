@@ -82,7 +82,7 @@ export function FacultyDashboard() {
                           <PercentText value={o.averagePercentage} />
                         </p>
                       </div>
-                      <Link to={`/faculty/offerings/${o.offeringId}/sessions/new`} className={`${buttonStyles.secondary} shrink-0`}>
+                      <Link to={`/faculty/offerings/${o.offeringId}/live`} className={`${buttonStyles.secondary} shrink-0`}>
                         Take attendance
                       </Link>
                     </li>

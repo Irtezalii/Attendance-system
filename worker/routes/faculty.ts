@@ -2,7 +2,6 @@ import { Hono, type Context } from "hono";
 import { z } from "zod";
 import type {
   AttendanceStatus,
-  FacultyOffering,
   FacultyOfferingDetailResponse,
   FacultyOfferingsResponse,
   OfferingStudent,
@@ -14,8 +13,9 @@ import type {
 import { summarize } from "../../shared/api";
 import { requireAuth, type AppEnv } from "../lib/auth";
 import { HttpError, idParam, isUniqueViolation, parseBody } from "../lib/http";
+import { assertEditable, requireOwnedOffering } from "../lib/ownership";
+import { liveRoutes } from "./live";
 import {
-  getOwnedOffering,
   listFacultyOfferings,
   OFFERING_COLUMNS,
   OFFERING_JOINS,
@@ -62,17 +62,6 @@ const updateSessionSchema = z
 
 // ---- Helpers ----
 
-async function requireOwnedOffering(c: Context<AppEnv>, offeringId: number): Promise<FacultyOffering> {
-  const offering = await getOwnedOffering(c.env.DB, c.get("auth").profileId, offeringId);
-  if (!offering) throw new HttpError(404, "Course not found.");
-  return offering;
-}
-
-function assertEditable(offering: FacultyOffering) {
-  if (offering.semester.status === "completed") {
-    throw new HttpError(409, "This semester is completed, so its attendance can no longer be changed.");
-  }
-}
 
 interface SessionRow {
   id: number;
@@ -357,4 +346,6 @@ export const facultyRoutes = new Hono<AppEnv>()
     // attendance_records rows are removed by ON DELETE CASCADE.
     await c.env.DB.prepare("DELETE FROM attendance_sessions WHERE id = ?").bind(session.id).run();
     return c.json({ ok: true });
-  });
+  })
+  // Live attendance codes (START / EXTEND / STOP); same auth middleware as above.
+  .route("/", liveRoutes);

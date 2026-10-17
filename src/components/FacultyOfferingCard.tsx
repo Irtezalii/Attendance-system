@@ -43,7 +43,7 @@ export function FacultyOfferingCard({ offering: o }: { offering: FacultyOffering
           View
         </Link>
         {o.semester.status !== "completed" && (
-          <Link to={`/faculty/offerings/${o.offeringId}/sessions/new`} className={`${buttonStyles.primary} flex-1`}>
+          <Link to={`/faculty/offerings/${o.offeringId}/live`} className={`${buttonStyles.primary} flex-1`}>
             Take attendance
           </Link>
         )}

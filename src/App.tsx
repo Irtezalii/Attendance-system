@@ -10,6 +10,7 @@ import { EditSession } from "./pages/faculty/EditSession";
 import { FacultyCourses } from "./pages/faculty/FacultyCourses";
 import { FacultyDashboard } from "./pages/faculty/FacultyDashboard";
 import { FacultyProfile } from "./pages/faculty/FacultyProfile";
+import { LiveSession } from "./pages/faculty/LiveSession";
 import { NewSession } from "./pages/faculty/NewSession";
 import { OfferingDetail } from "./pages/faculty/OfferingDetail";
 import { StudentAttendance } from "./pages/faculty/StudentAttendance";
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="profile" element={<FacultyProfile />} />
         <Route path="offerings/:offeringId" element={<OfferingDetail />} />
         <Route path="offerings/:offeringId/sessions/new" element={<NewSession />} />
+        <Route path="offerings/:offeringId/live" element={<LiveSession />} />
         <Route path="offerings/:offeringId/students/:enrollmentId" element={<StudentAttendance />} />
         <Route path="sessions/:sessionId" element={<EditSession />} />
       </Route>

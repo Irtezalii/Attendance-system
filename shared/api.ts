@@ -188,6 +188,98 @@ export interface UpdateSessionRequest {
   records?: AttendanceMark[];
 }
 
+// ---- Live attendance codes ----
+
+export type LiveCodeStatus = "active" | "expired" | "deactivated";
+
+export const LIVE_CODE_MINUTES = 10;
+export const LIVE_EXTEND_MINUTES = 5;
+
+export interface LiveCheckIn {
+  rollNumber: string;
+  name: string;
+  /** Unix ms. */
+  at: number;
+}
+
+export interface LiveSession {
+  /** attendance_sessions.id — the class this code records attendance for. */
+  sessionId: number;
+  code: string;
+  status: LiveCodeStatus;
+  classDate: string;
+  startTime: string;
+  /** Unix ms, server clock. */
+  startedAt: number;
+  expiresAt: number;
+  stoppedAt: number | null;
+  identifier: string;
+  presentCount: number;
+  enrolledCount: number;
+  checkIns: LiveCheckIn[];
+}
+
+export interface LiveStateResponse {
+  offering: FacultyOffering;
+  /** Server time (unix ms) when this response was built; the countdown is based on it. */
+  serverNow: number;
+  /** IANA timezone the class date/time are in (e.g. Asia/Karachi); clock times use it too. */
+  timeZone: string;
+  /** Latest code session for this class, or null if none was ever started. */
+  session: LiveSession | null;
+}
+
+export interface LiveCodeRequest {
+  code: string;
+}
+
+export interface CheckInRequest {
+  code: string;
+}
+
+export interface CheckInResponse {
+  courseCode: string;
+  courseTitle: string;
+  classDate: string;
+  startTime: string;
+}
+
+/** YYYY-MM-DD -> DD-MM-YYYY */
+export function formatDayMonthYear(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-");
+  return `${d}-${m}-${y}`;
+}
+
+/** Exact professor-facing messages for the live attendance window. */
+export const liveMessages = {
+  started: (isoDate: string, code: string) => [
+    `Your new code for today ${formatDayMonthYear(isoDate)} is ${code}`,
+    `Your Code will expire in ${LIVE_CODE_MINUTES} minutes.`,
+  ],
+  extended: "The code has been extended for another 5 minutes and will now expire at the end of 5 minute period.",
+  stopped: (code: string) => `Your last generated Code: ${code} has been Deactivated`,
+  notActive: (code: string) => `Code ${code} is not active.`,
+};
+
+/**
+ * Human-readable identifier for a class session, e.g.
+ * ATT-17-10-2026-morning-bscs-cs451-sec-a-2nd-year. Display only: the offering ID is
+ * what decides which students belong to the class.
+ */
+export function classIdentifier(o: OfferingInfo, isoDate: string): string {
+  const year = Math.ceil(o.semester.number / 2);
+  const ordinal = ["", "1st", "2nd", "3rd", "4th"][year] ?? `${year}th`;
+  return [
+    "ATT",
+    formatDayMonthYear(isoDate),
+    o.shift,
+    (o.programme ?? "na").toLowerCase(),
+    o.courseCode.toLowerCase().replace(/[^a-z0-9]/g, ""),
+    `sec-${o.section.toLowerCase()}`,
+    `${ordinal}-year`,
+  ].join("-");
+}
+
 export interface ApiError {
   error: string;
   details?: Record<string, string[]>;
