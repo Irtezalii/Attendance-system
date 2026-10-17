@@ -78,6 +78,7 @@ for (const file of readdirSync("data/curriculum").filter((f) => f.endsWith(".jso
 }
 const ownCourses = new Set((data.courses ?? []).map((c) => c.code));
 const studentProgramme = new Map((data.students ?? []).map((s) => [s.rollNumber, s.programme]));
+const studentShift = new Map((data.students ?? []).map((s) => [s.rollNumber, s.shift ?? "morning"]));
 for (const o of data.offerings ?? []) {
   // "faculty" = employee ID of an account in this file; "facultyKey" = directory profile key.
   if (!o.faculty && !o.facultyKey) fail(`offering ${o.course}: set "faculty" (employee ID) or "facultyKey" (directory key)`);
@@ -88,6 +89,10 @@ for (const o of data.offerings ?? []) {
   }
   for (const roll of rosterOf(o)) {
     const programme = studentProgramme.get(roll);
+    const shift = studentShift.get(roll);
+    if (shift && shift !== (o.shift ?? "morning")) {
+      fail(`offering ${o.course} (${o.shift ?? "morning"}): student ${roll} is in the ${shift} schedule`);
+    }
     if (known && programme && programme !== known.programme) {
       fail(`offering ${o.course} (${known.programme}): student ${roll} is in ${programme}`);
     }
@@ -99,7 +104,7 @@ const offeringRef = (o) =>
      JOIN courses c ON c.id = co.course_id
      JOIN semesters s ON s.id = co.semester_id
     WHERE c.code = ${sql(o.course)} AND s.number = ${sql(o.semester)}
-      AND s.academic_year = ${sql(o.academicYear)} AND co.section = ${sql(o.section ?? "A")})`;
+      AND s.academic_year = ${sql(o.academicYear)} AND co.section = ${sql(o.section ?? "A")} AND co.shift = ${sql(o.shift ?? "morning")})`;
 
 for (const s of data.semesters ?? []) {
   out.push(
@@ -130,8 +135,8 @@ for (const s of data.students ?? []) {
   const email = s.email.trim().toLowerCase();
   out.push(
     `INSERT INTO users (email, password_hash, role) VALUES (${sql(email)}, ${sql(hashPassword(s.password))}, 'student') ON CONFLICT DO NOTHING;`,
-    `INSERT INTO students (user_id, roll_number, name, current_semester, programme_id)
-       SELECT u.id, ${sql(s.rollNumber)}, ${sql(s.name)}, ${sql(s.currentSemester)}, p.id
+    `INSERT INTO students (user_id, roll_number, name, current_semester, programme_id, shift)
+       SELECT u.id, ${sql(s.rollNumber)}, ${sql(s.name)}, ${sql(s.currentSemester)}, p.id, ${sql(s.shift ?? "morning")}
          FROM users u, programmes p WHERE u.email = ${sql(email)} AND p.code = ${sql(s.programme)}
        ON CONFLICT DO NOTHING;`,
   );
@@ -139,8 +144,8 @@ for (const s of data.students ?? []) {
 
 for (const o of data.offerings ?? []) {
   out.push(
-    `INSERT INTO course_offerings (course_id, semester_id, faculty_id, section)
-       SELECT c.id, s.id, f.id, ${sql(o.section ?? "A")}
+    `INSERT INTO course_offerings (course_id, semester_id, faculty_id, section, shift)
+       SELECT c.id, s.id, f.id, ${sql(o.section ?? "A")}, ${sql(o.shift ?? "morning")}
          FROM courses c, semesters s, faculty f
         WHERE c.code = ${sql(o.course)} AND s.number = ${sql(o.semester)}
           AND s.academic_year = ${sql(o.academicYear)}

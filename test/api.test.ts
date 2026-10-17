@@ -188,7 +188,7 @@ describe("faculty access control", () => {
   it("lists only the professor's assigned offerings", async () => {
     const a = (await (await api("/faculty/offerings", { cookie: profA })).json()) as FacultyOfferingsResponse;
     const b = (await (await api("/faculty/offerings", { cookie: profB })).json()) as FacultyOfferingsResponse;
-    expect(a.offerings.map((o) => o.offeringId).sort()).toEqual([1, 3]);
+    expect(a.offerings.map((o) => o.offeringId).sort()).toEqual([1, 3, 4]);
     expect(b.offerings.map((o) => o.offeringId)).toEqual([2]);
   });
 
@@ -213,7 +213,7 @@ describe("faculty access control", () => {
   it("lists recent classes only from the professor's own offerings", async () => {
     const a = (await (await api("/faculty/sessions", { cookie: profA })).json()) as RecentSessionsResponse;
     const b = (await (await api("/faculty/sessions", { cookie: profB })).json()) as RecentSessionsResponse;
-    expect(new Set(a.sessions.map((s) => s.offering.offeringId))).toEqual(new Set([1]));
+    expect(new Set(a.sessions.map((s) => s.offering.offeringId))).toEqual(new Set([1, 4]));
     expect(b.sessions.map((s) => s.id)).toEqual([5]);
   });
 
@@ -315,7 +315,88 @@ describe("taking attendance", () => {
   });
 });
 
+describe("morning and evening schedules", () => {
+  it("keeps separate rosters for the same course in each schedule", async () => {
+    const morning = (await (await api("/faculty/offerings/1", { cookie: profA })).json()) as FacultyOfferingDetailResponse;
+    const evening = (await (await api("/faculty/offerings/4", { cookie: profA })).json()) as FacultyOfferingDetailResponse;
+    expect(morning.offering.shift).toBe("morning");
+    expect(evening.offering.shift).toBe("evening");
+    expect(morning.offering.courseCode).toBe(evening.offering.courseCode);
+    expect(morning.students.map((s) => s.rollNumber)).toEqual(["R-1", "R-2"]);
+    expect(evening.students.map((s) => s.rollNumber)).toEqual(["R-5"]);
+    // Classes are per offering too.
+    expect(evening.sessions.map((s) => s.id)).toEqual([6]);
+    expect(morning.sessions.map((s) => s.id)).not.toContain(6);
+  });
+
+  it("refuses marks for a student from the other schedule", async () => {
+    const intoMorning = await api("/faculty/offerings/1/sessions", {
+      cookie: profA,
+      body: { classDate: today(), startTime: "06:00", records: [{ enrollmentId: 1, status: "present" }, { enrollmentId: 2, status: "present" }, { enrollmentId: 6, status: "present" }] },
+    });
+    expect(intoMorning.status).toBe(400);
+    const intoEvening = await api("/faculty/offerings/4/sessions", {
+      cookie: profA,
+      body: { classDate: today(), startTime: "06:00", records: [{ enrollmentId: 1, status: "present" }] },
+    });
+    expect(intoEvening.status).toBe(400);
+    expect((await api("/faculty/sessions/6", { method: "PUT", cookie: profA, body: { records: [{ enrollmentId: 1, status: "present" }] } })).status).toBe(400);
+  });
+
+  it("saves evening attendance only against evening enrollments", async () => {
+    const before = (await (await api("/student/courses/1", { cookie: s1 })).json()) as StudentCourseDetailResponse;
+    const res = await api("/faculty/offerings/4/sessions", {
+      cookie: profA,
+      body: { classDate: today(), startTime: "19:30", records: [{ enrollmentId: 6, status: "present" }] },
+    });
+    expect(res.status).toBe(201);
+    const { id } = (await res.json()) as { id: number };
+    const rows = await env.DB.prepare(
+      "SELECT e.offering_id, st.shift FROM attendance_records r JOIN enrollments e ON e.id = r.enrollment_id JOIN students st ON st.id = e.student_id WHERE r.session_id = ?",
+    ).bind(id).all<{ offering_id: number; shift: string }>();
+    expect(rows.results).toEqual([{ offering_id: 4, shift: "evening" }]);
+    // The morning student's totals for the same course are unchanged.
+    const after = (await (await api("/student/courses/1", { cookie: s1 })).json()) as StudentCourseDetailResponse;
+    expect(after.course.summary).toEqual(before.course.summary);
+    await api(`/faculty/sessions/${id}`, { method: "DELETE", cookie: profA });
+  });
+
+  it("returns the student's schedule on their profile", async () => {
+    const evening = await login("s.evening@test.edu");
+    const me = (await (await api("/auth/me", { cookie: evening })).json()) as MeResponse;
+    expect(me.profile).toMatchObject({ kind: "student", shift: "evening" });
+    const { courses } = (await (await api("/student/courses", { cookie: evening })).json()) as StudentCoursesResponse;
+    expect(courses.map((c) => [c.offeringId, c.shift])).toEqual([[4, "evening"]]);
+  });
+});
+
 describe("database constraints", () => {
+  it("rejects enrolling a student into an offering of the other schedule", async () => {
+    // Student 5 is evening, offering 1 is morning; student 2 is morning, offering 4 is evening.
+    await expect(env.DB.prepare("INSERT INTO enrollments (student_id, offering_id) VALUES (5, 1)").run()).rejects.toThrow(/schedule/);
+    await expect(env.DB.prepare("INSERT INTO enrollments (student_id, offering_id) VALUES (2, 4)").run()).rejects.toThrow(/schedule/);
+  });
+
+  it("rejects enrolling a student into a course from another programme's curriculum", async () => {
+    // Put course 2 (offering 2) in a BSSE curriculum; student 2 is BSCS.
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO programmes (id, code, name) VALUES (2, 'BSSE', 'BS Software Engineering')"),
+      env.DB.prepare("INSERT INTO curricula (id, programme_id, version) VALUES (1, 2, 'test')"),
+      env.DB.prepare("INSERT INTO curriculum_courses (curriculum_id, semester_number, requirement, course_id) VALUES (1, 3, 'compulsory', 2)"),
+    ]);
+    try {
+      await expect(env.DB.prepare("INSERT INTO enrollments (student_id, offering_id) VALUES (2, 2)").run()).rejects.toThrow(/programme/);
+      const detail = (await (await api("/faculty/offerings/2", { cookie: profB })).json()) as FacultyOfferingDetailResponse;
+      expect(detail.offering.programme).toBe("BSSE");
+    } finally {
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM curriculum_courses WHERE curriculum_id = 1"),
+        env.DB.prepare("DELETE FROM curricula WHERE id = 1"),
+        env.DB.prepare("DELETE FROM programmes WHERE id = 2"),
+      ]);
+    }
+  });
+
   it("prevents duplicate enrollments", async () => {
     await expect(env.DB.prepare("INSERT INTO enrollments (student_id, offering_id) VALUES (1, 1)").run()).rejects.toThrow(/UNIQUE/);
   });

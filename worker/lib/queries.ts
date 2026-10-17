@@ -1,10 +1,14 @@
-import type { FacultyOffering, OfferingInfo, SemesterStatus } from "../../shared/api";
+import type { FacultyOffering, OfferingInfo, SemesterStatus, Shift } from "../../shared/api";
 import { attendancePercentage } from "../../shared/api";
 
 /** Columns for OfferingInfo; expects aliases co (course_offerings), c (courses), sem (semesters). */
 export const OFFERING_COLUMNS = `
   co.id AS offering_id, c.code AS course_code, c.title AS course_title, c.credit_hours,
-  co.section, sem.number AS semester_number, sem.academic_year, sem.status AS semester_status`;
+  co.section, co.shift, sem.number AS semester_number, sem.academic_year, sem.status AS semester_status,
+  (SELECT p.code FROM curriculum_courses cc
+     JOIN curricula cu ON cu.id = cc.curriculum_id
+     JOIN programmes p ON p.id = cu.programme_id
+    WHERE cc.course_id = c.id ORDER BY p.code LIMIT 1) AS programme_code`;
 
 export const OFFERING_JOINS = `
   JOIN courses c ON c.id = co.course_id
@@ -16,6 +20,8 @@ export interface OfferingRow {
   course_title: string;
   credit_hours: number;
   section: string;
+  shift: Shift;
+  programme_code: string | null;
   semester_number: number;
   academic_year: string;
   semester_status: SemesterStatus;
@@ -28,12 +34,14 @@ export function toOfferingInfo(row: OfferingRow): OfferingInfo {
     courseTitle: row.course_title,
     creditHours: row.credit_hours,
     section: row.section,
+    shift: row.shift,
+    programme: row.programme_code,
     semester: { number: row.semester_number, academicYear: row.academic_year, status: row.semester_status },
   };
 }
 
 /** Newest semester first, then course code. */
-export const OFFERING_ORDER = "sem.academic_year DESC, sem.number DESC, c.code, co.section";
+export const OFFERING_ORDER = "sem.academic_year DESC, sem.number DESC, c.code, co.shift, co.section";
 
 interface FacultyOfferingRow extends OfferingRow {
   enrolled_count: number;

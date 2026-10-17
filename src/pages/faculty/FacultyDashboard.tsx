@@ -12,7 +12,7 @@ import {
   StatCard,
 } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
-import { offeringLabel, semesterLabel } from "../../lib/format";
+import { offeringLabel, semesterLabel, shiftLabel } from "../../lib/format";
 import { buttonStyles, linkStyles } from "../../lib/styles";
 import { useApi } from "../../lib/useApi";
 
@@ -78,7 +78,7 @@ export function FacultyDashboard() {
                           {offeringLabel(o)}
                         </Link>
                         <p className="text-xs text-slate-500">
-                          Semester {o.semester.number} · {o.enrolledCount} students · {o.sessionsHeld} classes ·{" "}
+                          {[o.programme, shiftLabel(o.shift), `Semester ${o.semester.number}`].filter(Boolean).join(" · ")} · {o.enrolledCount} students · {o.sessionsHeld} classes ·{" "}
                           <PercentText value={o.averagePercentage} />
                         </p>
                       </div>

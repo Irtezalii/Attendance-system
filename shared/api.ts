@@ -5,6 +5,7 @@ export type Role = "student" | "faculty";
 export type AttendanceStatus = "present" | "absent";
 export type SessionStatus = "held" | "cancelled";
 export type SemesterStatus = "upcoming" | "active" | "completed";
+export type Shift = "morning" | "evening";
 
 export interface AttendanceSummary {
   /** Held (non-cancelled) sessions with a record for this student. */
@@ -21,6 +22,7 @@ export interface StudentProfile {
   email: string;
   rollNumber: string;
   currentSemester: number;
+  shift: Shift;
   programme: { code: string; name: string; semesterCount: number };
 }
 
@@ -58,6 +60,9 @@ export interface OfferingInfo {
   courseTitle: string;
   creditHours: number;
   section: string;
+  shift: Shift;
+  /** Programme whose curriculum contains the course (BSCS/BSSE/BSAI); null if none. */
+  programme: string | null;
   semester: { number: number; academicYear: string; status: SemesterStatus };
 }
 

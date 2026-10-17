@@ -32,6 +32,19 @@
   --color-ku-gold-400: #e0c35f;
   --color-ku-gold-500: #d4af37;
   --color-ku-gold-700: #8f7317;
+
+  /* Compact header slide-in, modelled on uok.edu.pk's sticky header ("stickyAni"). */
+  --animate-header-in: header-in 0.4s ease-in-out;
+  @keyframes header-in {
+    0% {
+      transform: translate3d(0, -40px, 0) scaleY(0.8);
+      opacity: 0.7;
+    }
+    100% {
+      transform: translate3d(0, 0, 0) scaleY(1);
+      opacity: 1;
+    }
+  }
 }
 
 /* In the base layer so utility classes (e.g. text-white on a heading) still win. */

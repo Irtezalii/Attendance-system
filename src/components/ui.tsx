@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import type { AttendanceStatus, EnrollmentStatus, SessionStatus } from "../../shared/api";
+import type { AttendanceStatus, EnrollmentStatus, OfferingInfo, SessionStatus, Shift } from "../../shared/api";
 import { ApiRequestError } from "../lib/api";
 import { attendanceTone, formatPercentage, type Tone } from "../lib/format";
 
@@ -158,4 +158,22 @@ export function EnrollmentPill({ status }: { status: EnrollmentStatus }) {
 
 export function ProgrammeBadge({ code }: { code: string }) {
   return <Pill className="bg-ku-gold-100 text-ku-gold-700 ring-1 ring-ku-gold-400/50">{code}</Pill>;
+}
+
+export function ShiftPill({ shift }: { shift: Shift }) {
+  return shift === "evening" ? (
+    <Pill className="bg-ku-navy-900 text-white">Evening</Pill>
+  ) : (
+    <Pill className="bg-sky-50 text-sky-800 ring-1 ring-sky-200">Morning</Pill>
+  );
+}
+
+/** Programme + schedule badges that identify which class an offering is. */
+export function OfferingTags({ offering }: { offering: OfferingInfo }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      {offering.programme && <ProgrammeBadge code={offering.programme} />}
+      <ShiftPill shift={offering.shift} />
+    </span>
+  );
 }

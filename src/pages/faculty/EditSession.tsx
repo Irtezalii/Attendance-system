@@ -5,7 +5,7 @@ import { AttendanceSheet, type Marks } from "../../components/AttendanceSheet";
 import { BackLink, ErrorState, LoadingState, PageHeader, Pill, Spinner } from "../../components/ui";
 import { buttonStyles, inputStyles } from "../../lib/styles";
 import { apiRequest } from "../../lib/api";
-import { formatDate, offeringLabel } from "../../lib/format";
+import { formatDate, offeringContext, offeringLabel } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
 
 export function EditSession() {
@@ -97,7 +97,7 @@ function EditSessionForm({ data, notice, onSaved }: FormProps) {
         title={formatDate(session.classDate)}
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
-            {offeringLabel(offering)} · {session.startTime}
+            {offeringLabel(offering)} · {offeringContext(offering)} · {session.startTime}
             {session.status === "cancelled" && <Pill className="bg-slate-100 text-slate-600">Cancelled</Pill>}
           </span>
         }

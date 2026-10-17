@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Logo placeholder">
-  <!-- PLACEHOLDER: replace with the official University of Karachi / UBIT logo (see src/lib/branding.ts). -->
-  <circle cx="60" cy="60" r="56" fill="#ffffff" stroke="#7c0405" stroke-width="4"/>
-  <circle cx="60" cy="60" r="47" fill="none" stroke="#d4af37" stroke-width="2" stroke-dasharray="4 4"/>
-  <text x="60" y="66" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-weight="700" fill="#7c0405">KU</text>
-  <text x="60" y="86" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" letter-spacing="1.5" fill="#081933">LOGO</text>
-</svg>

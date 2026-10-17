@@ -106,10 +106,12 @@ Run `npm run db:migrate:remote` whenever a new file is added to `migrations/`.
 
 ## Replacing the logo and campus photo
 
-The UI ships with clearly labelled placeholders in `public/assets/branding/`. To use the official artwork:
+The logo (`Logo.png`) and the login background photo (`ubit-campus.png`) are in `public/assets/branding/`. To replace either:
 
-1. Copy the files into `public/assets/branding/` (for example `ku-logo.png` and `ubit-campus.jpg`).
-2. Update `logo.src` and `loginBackground.src` in `src/lib/branding.ts`.
+1. Copy the new file into `public/assets/branding/`. Give it a proper extension (`.png`, `.jpg`, `.webp`): the server picks the content type from it, and browsers refuse images served without one.
+2. Update `logo.src` or `loginBackground.src` in `src/lib/branding.ts`.
+
+The login photo is shown full-height behind a maroon overlay, so a landscape image of at least ~1600 px wide looks sharpest.
 
 Institution names shown in the UI are in the same file. Colours (KU maroon `#7c0405`, navy `#081933`, gold `#d4af37`) and fonts (Source Serif 4, Inter; self-hosted) are defined in `src/index.css`.
 

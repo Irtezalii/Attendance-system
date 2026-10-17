@@ -2,7 +2,7 @@ import { useParams } from "react-router";
 import type { StudentInOfferingResponse } from "../../../shared/api";
 import { AttendanceHistory, SummaryStats } from "../../components/AttendanceHistory";
 import { BackLink, ErrorState, LoadingState, PageHeader } from "../../components/ui";
-import { offeringLabel, semesterLabel } from "../../lib/format";
+import { offeringContext, offeringLabel } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
 
 export function StudentAttendance() {
@@ -20,7 +20,7 @@ export function StudentAttendance() {
         <>
           <PageHeader
             title={data.student.name}
-            subtitle={`${data.student.rollNumber} · ${offeringLabel(data.offering)} · ${semesterLabel(data.offering)}`}
+            subtitle={`${data.student.rollNumber} · ${offeringLabel(data.offering)} · ${offeringContext(data.offering)}`}
           />
           <SummaryStats summary={data.student.summary} />
           <h2 className="mb-3 text-lg font-semibold text-ku-navy-900">Attendance by date</h2>

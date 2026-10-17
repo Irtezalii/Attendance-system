@@ -55,7 +55,7 @@ export function LoginPage() {
       >
         <div className="absolute inset-0 bg-linear-to-br from-ku-maroon-900/95 via-ku-maroon-800/85 to-ku-navy-900/90" aria-hidden />
         <div className="relative flex items-center gap-4">
-          <img src={branding.logo.src} alt={branding.logo.alt} className="size-16 shrink-0 rounded-full bg-white p-1 shadow-md sm:size-20" />
+          <img src={branding.logo.src} alt={branding.logo.alt} className="size-16 shrink-0 rounded-full bg-white object-contain p-2 shadow-md sm:size-20" />
           <div>
             <p className="font-serif text-xl font-semibold sm:text-2xl">{branding.universityName}</p>
             <p className="text-sm text-ku-maroon-100">{branding.departmentName}</p>

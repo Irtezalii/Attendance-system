@@ -27,12 +27,33 @@
     { "rollNumber": "DEV-SE-25-003", "name": "Hamza Raza", "email": "hamza.raza@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSSE" },
     { "rollNumber": "DEV-AI-26-001", "name": "Sana Kareem", "email": "sana.kareem@student.ubit.test", "password": "password123", "currentSemester": 1, "programme": "BSAI" },
     { "rollNumber": "DEV-AI-26-002", "name": "Danish Mirza", "email": "danish.mirza@student.ubit.test", "password": "password123", "currentSemester": 1, "programme": "BSAI" },
-    { "rollNumber": "DEV-AI-26-003", "name": "Hira Kamal", "email": "hira.kamal@student.ubit.test", "password": "password123", "currentSemester": 1, "programme": "BSAI" }
+    { "rollNumber": "DEV-AI-26-003", "name": "Hira Kamal", "email": "hira.kamal@student.ubit.test", "password": "password123", "currentSemester": 1, "programme": "BSAI" },
+    { "rollNumber": "DEV-CS-25-E01", "name": "Rehan Akbar", "email": "rehan.akbar@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSCS", "shift": "evening" },
+    { "rollNumber": "DEV-CS-25-E02", "name": "Areeba Shah", "email": "areeba.shah@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSCS", "shift": "evening" },
+    { "rollNumber": "DEV-CS-25-E03", "name": "Kamran Ali", "email": "kamran.ali@student.ubit.test", "password": "password123", "currentSemester": 3, "programme": "BSCS", "shift": "evening" }
   ],
   "cohorts": {
-    "bscs-2025": ["DEV-CS-25-001", "DEV-CS-25-002", "DEV-CS-25-003", "DEV-CS-25-004"],
-    "bsse-2025": ["DEV-SE-25-001", "DEV-SE-25-002", "DEV-SE-25-003"],
-    "bsai-2026": ["DEV-AI-26-001", "DEV-AI-26-002", "DEV-AI-26-003"]
+    "bscs-2025": [
+      "DEV-CS-25-001",
+      "DEV-CS-25-002",
+      "DEV-CS-25-003",
+      "DEV-CS-25-004"
+    ],
+    "bsse-2025": [
+      "DEV-SE-25-001",
+      "DEV-SE-25-002",
+      "DEV-SE-25-003"
+    ],
+    "bsai-2026": [
+      "DEV-AI-26-001",
+      "DEV-AI-26-002",
+      "DEV-AI-26-003"
+    ],
+    "bscs-2025-evening": [
+      "DEV-CS-25-E01",
+      "DEV-CS-25-E02",
+      "DEV-CS-25-E03"
+    ]
   },
   "offerings": [
     { "course": "CS-352", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F01", "cohort": "bscs-2025" },
@@ -41,7 +62,6 @@
     { "course": "CS-358", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F01", "cohort": "bscs-2025" },
     { "course": "CS-362", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F02", "cohort": "bscs-2025" },
     { "course": "CS-364", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F03", "cohort": "bscs-2025" },
-
     { "course": "SE-352", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F02", "cohort": "bsse-2025" },
     { "course": "SE-354", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F01", "cohort": "bsse-2025" },
     { "course": "SE-356", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F03", "cohort": "bsse-2025" },
@@ -49,21 +69,24 @@
     { "course": "SE-360", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F03", "cohort": "bsse-2025" },
     { "course": "SE-362", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F01", "cohort": "bsse-2025" },
     { "course": "SE-366", "semester": 2, "academicYear": "2025-2026", "faculty": "TEST-F02", "cohort": "bsse-2025" },
-
     { "course": "CS-451", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bscs-2025" },
     { "course": "CS-453", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bscs-2025" },
     { "course": "CS-455", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bscs-2025" },
     { "course": "CS-457", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bscs-2025" },
     { "course": "CS-459", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bscs-2025" },
     { "course": "CS-461", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bscs-2025" },
-
+    { "course": "CS-451", "semester": 3, "academicYear": "2026-2027", "shift": "evening", "faculty": "TEST-F01", "cohort": "bscs-2025-evening" },
+    { "course": "CS-453", "semester": 3, "academicYear": "2026-2027", "shift": "evening", "faculty": "TEST-F03", "cohort": "bscs-2025-evening" },
+    { "course": "CS-455", "semester": 3, "academicYear": "2026-2027", "shift": "evening", "faculty": "TEST-F02", "cohort": "bscs-2025-evening" },
+    { "course": "CS-457", "semester": 3, "academicYear": "2026-2027", "shift": "evening", "faculty": "TEST-F01", "cohort": "bscs-2025-evening" },
+    { "course": "CS-459", "semester": 3, "academicYear": "2026-2027", "shift": "evening", "faculty": "TEST-F02", "cohort": "bscs-2025-evening" },
+    { "course": "CS-461", "semester": 3, "academicYear": "2026-2027", "shift": "evening", "faculty": "TEST-F03", "cohort": "bscs-2025-evening" },
     { "course": "SE-451", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bsse-2025" },
     { "course": "SE-453", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bsse-2025" },
     { "course": "SE-455", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bsse-2025" },
     { "course": "SE-457", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bsse-2025" },
     { "course": "SE-459", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bsse-2025" },
     { "course": "SE-450", "semester": 3, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bsse-2025" },
-
     { "course": "AI-351", "semester": 1, "academicYear": "2026-2027", "faculty": "TEST-F01", "cohort": "bsai-2026" },
     { "course": "AI-353", "semester": 1, "academicYear": "2026-2027", "faculty": "TEST-F02", "cohort": "bsai-2026" },
     { "course": "AI-355", "semester": 1, "academicYear": "2026-2027", "faculty": "TEST-F03", "cohort": "bsai-2026" },
@@ -76,10 +99,6 @@
     "presentRate": 0.85,
     "maxSessions": 16,
     "endDate": "2026-10-15",
-    "semesterStartDates": {
-      "2/2025-2026": "2026-02-02",
-      "3/2026-2027": "2026-09-01",
-      "1/2026-2027": "2026-09-14"
-    }
+    "semesterStartDates": { "2/2025-2026": "2026-02-02", "3/2026-2027": "2026-09-01", "1/2026-2027": "2026-09-14" }
   }
 }

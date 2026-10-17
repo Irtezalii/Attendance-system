@@ -33,6 +33,7 @@ KU/UBIT (University of Karachi, Department of Computer Science) student attendan
   - `curricula` + `curriculum_courses`: definitions. A row is a course, or an elective slot with a placeholder code (`CS-xxx`) linked by `elective_group`; `alternative_group` marks one-of options such as Project/Thesis.
   - `course_offerings`: what is taught in a `semesters` row (number × academic year). Enrollments and attendance hang off offerings, never off curriculum rows.
   - `faculty` is a directory profile. `user_id` is NULL unless access was granted.
+  - Morning/Evening (`migrations/0003_shifts.sql`): `course_offerings.shift` and `students.shift`. A course taught in both schedules is two offerings, unique on (course, semester, shift, section). Triggers reject enrollments whose student shift or programme doesn't match the offering. An offering's programme is derived from the curriculum (`OFFERING_COLUMNS.programme_code`).
 - **Data pipeline** (no HTTP admin/seed endpoints, by design):
   - `data/curriculum/*.json` → `scripts/import-curriculum.mjs`. This also regenerates `docs/curriculum-validation.md`, so commit both together.
   - `data/faculty/*.json` → `scripts/import-faculty.mjs`, which never creates logins.

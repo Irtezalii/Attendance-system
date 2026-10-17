@@ -39,9 +39,16 @@
     - Every page checked visually at desktop and phone width: no console errors, no horizontal page scroll.
     - `wrangler deploy --dry-run` passes.
 
+- **Morning/Evening schedules** (2026-10-17):
+  - Migration 0003: offerings and students carry a shift.
+  - Database triggers block cross-schedule and cross-programme enrollments.
+  - Take Attendance is grouped by programme and schedule, with BSCS/BSSE/BSAI and Morning/Evening badges on the faculty pages.
+  - Dev data: 3 BSCS Evening students and 6 Evening offerings.
+  - 38 API tests pass.
+
 ## Current status
 - Feature-complete on the branch; not merged or deployed.
-- The logo and campus photo are labelled placeholders (`public/assets/branding/`). Swap them in `src/lib/branding.ts`.
+- Official KU logo (`Logo.png`) and UBIT campus photo (`ubit-campus.png`) are in use (2026-10-17). The photo is only 960×305, so it is soft on large screens; a higher-resolution version would look better.
 - Your existing local DB already has migration 0002 plus the curriculum and faculty imports, but still holds the *old* demo accounts. Stop `npm run dev` and run `npm run db:reset:local` to switch to the new dev data.
 
 ## Known issues / open questions
@@ -58,7 +65,7 @@
 - No frontend unit tests; the UI was verified with end-to-end checks and screenshots.
 
 ## Next task
-- Provide the official logo and campus photo, confirm the curriculum source, then deploy:
+- Confirm the curriculum source, then deploy:
   1. `wrangler login`
   2. `npm run deploy`
   3. `npm run db:migrate:remote`

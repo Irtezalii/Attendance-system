@@ -1,6 +1,8 @@
 import { ProfileCard } from "../../components/ProfileCard";
+import { SignOutButton } from "../../components/SignOutButton";
 import { PageHeader, ProgrammeBadge } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
+import { shiftLabel } from "../../lib/format";
 
 export function StudentProfile() {
   const { me } = useAuth();
@@ -9,8 +11,8 @@ export function StudentProfile() {
 
   return (
     <>
-      <PageHeader title="My Profile" />
       <div className="max-w-3xl">
+        <PageHeader title="My Profile" actions={<SignOutButton />} />
         <ProfileCard
           name={p.name}
           subtitle={
@@ -22,6 +24,7 @@ export function StudentProfile() {
             { label: "Roll number", value: p.rollNumber },
             { label: "Programme", value: `${p.programme.name} (${p.programme.code})` },
             { label: "Current semester", value: `Semester ${p.currentSemester} of ${p.programme.semesterCount}` },
+            { label: "Schedule", value: shiftLabel(p.shift) },
             { label: "Email", value: p.email },
           ]}
         />

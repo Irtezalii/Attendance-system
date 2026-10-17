@@ -1,14 +1,17 @@
 import { Link } from "react-router";
 import type { FacultyOffering } from "../../shared/api";
 import { buttonStyles } from "../lib/styles";
-import { Card, PercentText } from "./ui";
+import { Card, OfferingTags, PercentText } from "./ui";
 
 export function FacultyOfferingCard({ offering: o }: { offering: FacultyOffering }) {
   return (
     <Card className="flex flex-col p-5">
-      <p className="text-xs font-semibold tracking-wide text-ku-maroon-700">
-        {o.courseCode} · Section {o.section}
-      </p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-semibold tracking-wide text-ku-maroon-700">
+          {o.courseCode} · Section {o.section}
+        </p>
+        <OfferingTags offering={o} />
+      </div>
       <h3 className="mt-1 line-clamp-2 font-semibold text-ku-navy-900" title={o.courseTitle}>
         {o.courseTitle}
       </h3>

@@ -1,5 +1,6 @@
 import type { FacultyCategory } from "../../../shared/api";
 import { ProfileCard } from "../../components/ProfileCard";
+import { SignOutButton } from "../../components/SignOutButton";
 import { PageHeader } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
 
@@ -19,8 +20,8 @@ export function FacultyProfile() {
 
   return (
     <>
-      <PageHeader title="My Profile" />
       <div className="max-w-3xl">
+        <PageHeader title="My Profile" actions={<SignOutButton />} />
         <ProfileCard
           name={p.name}
           subtitle={[p.designation, p.department].filter(Boolean).join(" · ")}

@@ -32,4 +32,5 @@ dist-ssr
 
 # Real seed data (student/faculty records, passwords) and generated seed SQL
 scripts/data/
+logins.txt
 *.seed.sql

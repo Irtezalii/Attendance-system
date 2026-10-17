@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import type { FacultyCategory, MeResponse } from "../../shared/api";
+import type { FacultyCategory, MeResponse, Shift } from "../../shared/api";
 import { endSession, requireAuth, startSession, type AppEnv } from "../lib/auth";
 import { HttpError, parseBody } from "../lib/http";
 import { DUMMY_HASH, verifyPassword } from "../lib/password";
@@ -56,7 +56,7 @@ export const authRoutes = new Hono<AppEnv>()
     if (auth.role === "student") {
       const row = await db
         .prepare(
-          `SELECT st.name, st.roll_number, st.current_semester,
+          `SELECT st.name, st.roll_number, st.current_semester, st.shift,
              p.code AS programme_code, p.name AS programme_name, p.semester_count
              FROM students st JOIN programmes p ON p.id = st.programme_id WHERE st.id = ?`,
         )
@@ -65,6 +65,7 @@ export const authRoutes = new Hono<AppEnv>()
           name: string;
           roll_number: string;
           current_semester: number;
+          shift: Shift;
           programme_code: string;
           programme_name: string;
           semester_count: number;
@@ -76,6 +77,7 @@ export const authRoutes = new Hono<AppEnv>()
         email: auth.email,
         rollNumber: row.roll_number,
         currentSemester: row.current_semester,
+        shift: row.shift,
         programme: { code: row.programme_code, name: row.programme_name, semesterCount: row.semester_count },
       };
     } else {

@@ -5,7 +5,7 @@ import { AttendanceSheet, type Marks } from "../../components/AttendanceSheet";
 import { BackLink, EmptyState, ErrorState, LoadingState, PageHeader, Spinner } from "../../components/ui";
 import { buttonStyles, inputStyles } from "../../lib/styles";
 import { apiRequest } from "../../lib/api";
-import { nowTimeLocal, offeringLabel, semesterLabel, todayLocal } from "../../lib/format";
+import { nowTimeLocal, offeringContext, offeringLabel, todayLocal } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
 
 export function NewSession() {
@@ -33,7 +33,7 @@ function NewSessionForm({ data }: { data: FacultyOfferingDetailResponse }) {
   const [saving, setSaving] = useState(false);
 
   const header = (
-    <PageHeader title="Take attendance" subtitle={`${offeringLabel(offering)} · ${semesterLabel(offering)}`} />
+    <PageHeader title="Take attendance" subtitle={`${offeringLabel(offering)} · ${offeringContext(offering)}`} />
   );
 
   if (offering.semester.status === "completed") {

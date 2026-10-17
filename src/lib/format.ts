@@ -30,6 +30,15 @@ export function semesterLabel(o: OfferingInfo): string {
   return `Semester ${o.semester.number} · ${o.semester.academicYear}`;
 }
 
+export function shiftLabel(shift: OfferingInfo["shift"]): string {
+  return shift === "evening" ? "Evening" : "Morning";
+}
+
+/** e.g. "BSCS · Evening · Semester 3 · 2026-2027" — identifies the exact class. */
+export function offeringContext(o: OfferingInfo): string {
+  return [o.programme, shiftLabel(o.shift), semesterLabel(o)].filter(Boolean).join(" · ");
+}
+
 export function offeringLabel(o: OfferingInfo): string {
   return `${o.courseCode} ${o.courseTitle}${o.section !== "A" ? ` (Section ${o.section})` : ""}`;
 }

@@ -1,8 +1,7 @@
 // Institutional identity and image assets, in one place so they are easy to replace.
 //
-// To use the official artwork: copy the files into public/assets/branding/ (for example
-// ku-logo.png and ubit-campus.jpg) and point `logo.src` / `loginBackground.src` at them.
-// The placeholders are deliberately generic and labelled; they are not the official logos.
+// Images live in public/assets/branding/. To change one, copy the new file there
+// (with a proper extension such as .png or .jpg) and update its path below.
 
 export const branding = {
   universityName: "University of Karachi",
@@ -11,10 +10,10 @@ export const branding = {
   departmentName: "Department of Computer Science",
   appName: "Student Attendance System",
   logo: {
-    src: "/assets/branding/ku-logo-placeholder.svg",
+    src: "/assets/branding/Logo.png",
     alt: "University of Karachi",
   },
   loginBackground: {
-    src: "/assets/branding/campus-placeholder.svg",
+    src: "/assets/branding/ubit-campus.png",
   },
 } as const;

@@ -12,6 +12,7 @@ import {
   PercentText,
   ProgrammeBadge,
   SectionTitle,
+  ShiftPill,
   StatCard,
 } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
@@ -40,6 +41,7 @@ export function StudentDashboard() {
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
             <ProgrammeBadge code={profile.programme.code} />
+            <ShiftPill shift={profile.shift} />
             Roll No. {profile.rollNumber} · Semester {profile.currentSemester} of {profile.programme.semesterCount}
           </span>
         }

@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router";
 import type { FacultyOfferingDetailResponse } from "../../../shared/api";
 import { BackLink, Card, EmptyState, ErrorState, LoadingState, PageHeader, PercentText, Pill, StatCard } from "../../components/ui";
 import { buttonStyles } from "../../lib/styles";
-import { formatDate, offeringLabel, semesterLabel } from "../../lib/format";
+import { formatDate, offeringContext, offeringLabel } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
 
 type Tab = "students" | "sessions";
@@ -22,7 +22,7 @@ export function OfferingDetail() {
         <>
           <PageHeader
             title={offeringLabel(data.offering)}
-            subtitle={`${semesterLabel(data.offering)} · ${data.offering.creditHours} credit hours`}
+            subtitle={`${offeringContext(data.offering)} · ${data.offering.creditHours} credit hours`}
             actions={
               data.offering.semester.status !== "completed" && (
                 <Link to={`/faculty/offerings/${data.offering.offeringId}/sessions/new`} className={buttonStyles.primary}>
