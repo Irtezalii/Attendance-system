@@ -97,7 +97,7 @@ function HeaderBar({ compact }: { compact: boolean }) {
       : (me.profile.designation ?? "Faculty");
 
   const navLinks = (
-    <ul className={`flex gap-1 ${compact ? "" : "w-full px-4 sm:px-6 lg:px-10"}`}>
+    <ul className={`flex gap-1 ${compact ? "" : "w-full justify-center px-4 sm:px-6 lg:px-10"}`}>
       {items.map((item) => {
         const active = isActive(item, pathname);
         return (

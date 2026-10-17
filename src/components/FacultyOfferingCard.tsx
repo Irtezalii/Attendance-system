@@ -3,9 +3,16 @@ import type { FacultyOffering } from "../../shared/api";
 import { buttonStyles } from "../lib/styles";
 import { Card, OfferingTags, PercentText } from "./ui";
 
+// Coloured top edge per programme, matching the programme badge colours.
+const PROGRAMME_ACCENT: Record<string, string> = {
+  BSCS: "border-t-ku-maroon-700",
+  BSSE: "border-t-ku-navy-700",
+  BSAI: "border-t-ku-gold-500",
+};
+
 export function FacultyOfferingCard({ offering: o }: { offering: FacultyOffering }) {
   return (
-    <Card className="flex flex-col p-5">
+    <Card className={`flex flex-col border-t-4 p-5 ${PROGRAMME_ACCENT[o.programme ?? ""] ?? "border-t-slate-300"}`}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-semibold tracking-wide text-ku-maroon-700">
           {o.courseCode} · Section {o.section}

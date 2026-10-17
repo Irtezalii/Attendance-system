@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router";
 import type { FacultyOffering, FacultyOfferingsResponse, Shift } from "../../../shared/api";
-import { Card, EmptyState, ErrorState, LoadingState, OfferingTags, PageHeader, SectionTitle } from "../../components/ui";
+import { Card, EmptyState, ErrorState, LoadingState, OfferingTags, PageHeader, SectionTitle, SegmentedControl } from "../../components/ui";
 import { shiftLabel } from "../../lib/format";
 import { buttonStyles } from "../../lib/styles";
 import { useApi } from "../../lib/useApi";
@@ -36,23 +36,13 @@ export function TakeAttendance() {
       />
 
       {data && open.length > 0 && (
-        <div role="group" aria-label="Schedule" className="mb-6 inline-flex rounded-lg border border-slate-300 bg-white p-1 shadow-sm">
-          {SHIFTS.map((s) => {
-            const selected = s === shift;
-            return (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => setParams(s === "morning" ? {} : { shift: s }, { replace: true })}
-                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ku-maroon-300 ${
-                  selected ? "bg-ku-maroon-700 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {shiftLabel(s)} <span className={selected ? "text-ku-maroon-100" : "text-slate-400"}>({count(s)})</span>
-              </button>
-            );
-          })}
+        <div className="mb-6">
+          <SegmentedControl
+            label="Schedule"
+            value={shift}
+            options={SHIFTS.map((s) => ({ value: s, label: shiftLabel(s), count: count(s) }))}
+            onChange={(s) => setParams(s === "morning" ? {} : { shift: s }, { replace: true })}
+          />
         </div>
       )}
 

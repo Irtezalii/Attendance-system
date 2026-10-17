@@ -156,8 +156,56 @@ export function EnrollmentPill({ status }: { status: EnrollmentStatus }) {
   return status === "dropped" ? <Pill className="bg-slate-100 text-slate-600">Dropped</Pill> : null;
 }
 
+// One colour per programme so BSCS / BSSE / BSAI are easy to tell apart.
+const PROGRAMME_STYLES: Record<string, string> = {
+  BSCS: "bg-ku-maroon-50 text-ku-maroon-700 ring-1 ring-ku-maroon-200",
+  BSSE: "bg-ku-navy-50 text-ku-navy-700 ring-1 ring-ku-navy-100",
+  BSAI: "bg-ku-gold-100 text-ku-gold-700 ring-1 ring-ku-gold-400/50",
+};
+
 export function ProgrammeBadge({ code }: { code: string }) {
-  return <Pill className="bg-ku-gold-100 text-ku-gold-700 ring-1 ring-ku-gold-400/50">{code}</Pill>;
+  return <Pill className={PROGRAMME_STYLES[code] ?? "bg-slate-100 text-slate-700"}>{code}</Pill>;
+}
+
+export interface SegmentOption<T extends string> {
+  value: T;
+  label: string;
+  count?: number;
+}
+
+/** A row of toggle buttons where exactly one option is selected. */
+export function SegmentedControl<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: SegmentOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div role="group" aria-label={label} className="inline-flex flex-wrap rounded-lg border border-slate-300 bg-white p-1 shadow-sm">
+      {options.map((o) => {
+        const selected = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onChange(o.value)}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ku-maroon-300 ${
+              selected ? "bg-ku-maroon-700 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {o.label}
+            {o.count !== undefined && <span className={selected ? "text-ku-maroon-100" : "text-slate-400"}> ({o.count})</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export function ShiftPill({ shift }: { shift: Shift }) {
