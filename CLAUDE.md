@@ -34,6 +34,8 @@ KU/UBIT student attendance system: React SPA + Hono Worker API + D1 in one Cloud
 - **Worker tsconfig**: uses `bundler` resolution (no `.js` import suffixes).
 - **PBKDF2**: capped at 100k iterations on Workers.
 - **CSP**: strict (`public/_headers`). No inline scripts, `<style>` tags or external CDNs or fonts.
-- **react-refresh lint**: only components may be exported from `.tsx` files.
+- **react-refresh lint**: only components may be exported from `.tsx` files (`lib/auth.tsx`'s `useAuth` is the one marked exception).
+- **D1 hot spots**: `getOwnedOffering` / faculty offering lists and "recent sessions" compute stats over all history (thousands of rows per call); the live-code poll calls `requireOwnedOffering` every 5 s. Use a lightweight ownership check in new hot paths.
+- **Dev-only tooling**: the Agentation toolbar renders only under `import.meta.env.DEV` (`src/main.tsx`). Keep it out of production builds.
 - **Source data**: curriculum and faculty JSON stay as published. Note doubts in `sourceIssues`/`notes`.
 - **Secrets**: real data and credentials go in gitignored `scripts/data/` (and `logins.txt`). Never commit them or generated SQL.
