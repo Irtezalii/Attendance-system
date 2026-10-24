@@ -1,8 +1,9 @@
 import { Hono, type Context } from "hono";
 import { z } from "zod";
-import type { FacultyOffering, LiveCodeStatus, LiveStateResponse } from "../../shared/api";
+import type { FacultyOffering, GeoRejectionReason, LiveCodeStatus, LiveStateResponse } from "../../shared/api";
 import { classIdentifier, LIVE_CODE_MINUTES, LIVE_EXTEND_MINUTES, liveMessages } from "../../shared/api";
 import type { AppEnv } from "../lib/auth";
+import { campusFence } from "../lib/geo";
 import { HttpError, idParam, isUniqueViolation, parseBody } from "../lib/http";
 import { assertEditable, requireOwnedOffering } from "../lib/ownership";
 import { localNow } from "../lib/time";
@@ -13,6 +14,21 @@ import { localNow } from "../lib/time";
 
 const MINUTE = 60_000;
 const codeSchema = z.object({ code: z.string().regex(/^\d{4}$/, "Codes are 4 digits, e.g. 4821.") });
+
+export const geoPointSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  accuracy: z.number().min(0).max(1_000_000),
+});
+
+const startSchema = z.object({ requireLocation: z.boolean().optional() });
+
+/** START may be sent without a body (code works anywhere). */
+async function readStart(c: Context<AppEnv>) {
+  const length = c.req.header("Content-Length");
+  if (!c.req.header("Content-Type") && (length === undefined || length === "0")) return {};
+  return parseBody(c, startSchema);
+}
 
 function generateCode(): string {
   return String(crypto.getRandomValues(new Uint32Array(1))[0] % 10_000).padStart(4, "0");
@@ -34,14 +50,28 @@ interface SessionRow {
   code_started_at: number;
   code_expires_at: number;
   code_stopped_at: number | null;
+  geo_required: number;
+  geo_radius_m: number | null;
 }
+
+interface RejectionRow {
+  roll_number: string;
+  name: string;
+  reason: GeoRejectionReason;
+  distance_m: number | null;
+  accuracy_m: number | null;
+  at: number;
+}
+
+const round = (v: number | null) => (v === null ? null : Math.round(v));
 
 async function loadState(c: Context<AppEnv>, offering: FacultyOffering): Promise<LiveStateResponse> {
   const db = c.env.DB;
   const now = Date.now();
   const row = await db
     .prepare(
-      `SELECT id, code, code_status, class_date, start_time, code_started_at, code_expires_at, code_stopped_at
+      `SELECT id, code, code_status, class_date, start_time, code_started_at, code_expires_at, code_stopped_at,
+              geo_required, geo_radius_m
          FROM attendance_sessions
         WHERE offering_id = ? AND code IS NOT NULL
         ORDER BY code_started_at DESC LIMIT 1`,
@@ -51,18 +81,31 @@ async function loadState(c: Context<AppEnv>, offering: FacultyOffering): Promise
   const timeZone = c.env.APP_TIMEZONE;
   if (!row) return { offering, serverNow: now, timeZone, session: null };
 
-  const [counts, checkIns] = await db.batch([
+  const [counts, checkIns, rejections] = await db.batch([
     db
       .prepare("SELECT COUNT(*) AS enrolled, COUNT(CASE WHEN status = 'present' THEN 1 END) AS present FROM attendance_records WHERE session_id = ?")
       .bind(row.id),
     db
       .prepare(
-        `SELECT st.roll_number, st.name, r.checked_in_at
+        `SELECT st.roll_number, st.name, r.checked_in_at, r.checkin_distance_m
            FROM attendance_records r
            JOIN enrollments e ON e.id = r.enrollment_id
            JOIN students st ON st.id = e.student_id
           WHERE r.session_id = ? AND r.checked_in_at IS NOT NULL
           ORDER BY r.checked_in_at DESC`,
+      )
+      .bind(row.id),
+    // Latest refused attempt per student who is still not marked present.
+    db
+      .prepare(
+        `SELECT st.roll_number, st.name, cr.reason, cr.distance_m, cr.accuracy_m, MAX(cr.at) AS at
+           FROM checkin_rejections cr
+           JOIN enrollments e ON e.id = cr.enrollment_id
+           JOIN students st ON st.id = e.student_id
+           JOIN attendance_records r ON r.session_id = cr.session_id AND r.enrollment_id = cr.enrollment_id
+          WHERE cr.session_id = ? AND r.status <> 'present'
+          GROUP BY cr.enrollment_id
+          ORDER BY at DESC`,
       )
       .bind(row.id),
   ]);
@@ -85,10 +128,22 @@ async function loadState(c: Context<AppEnv>, offering: FacultyOffering): Promise
       identifier: classIdentifier(offering, row.class_date),
       presentCount: count.present,
       enrolledCount: count.enrolled,
-      checkIns: (checkIns.results as { roll_number: string; name: string; checked_in_at: number }[]).map((r) => ({
+      checkIns: (
+        checkIns.results as { roll_number: string; name: string; checked_in_at: number; checkin_distance_m: number | null }[]
+      ).map((r) => ({
         rollNumber: r.roll_number,
         name: r.name,
         at: r.checked_in_at,
+        distanceM: round(r.checkin_distance_m),
+      })),
+      geo: row.geo_required ? { areaName: c.env.CAMPUS_NAME, halfSizeM: row.geo_radius_m ?? 0 } : null,
+      rejections: (rejections.results as RejectionRow[]).map((r) => ({
+        rollNumber: r.roll_number,
+        name: r.name,
+        reason: r.reason,
+        distanceM: round(r.distance_m),
+        accuracyM: round(r.accuracy_m),
+        at: r.at,
       })),
     },
   };
@@ -105,6 +160,11 @@ export const liveRoutes = new Hono<AppEnv>()
     const offering = await requireOwnedOffering(c, idParam(c, "offeringId"));
     assertEditable(offering);
     if (offering.enrolledCount === 0) throw new HttpError(400, "No students are enrolled in this course yet.");
+    const input = await readStart(c);
+    // Location check: a fixed square around the campus point (wrangler vars). The professor's
+    // device location is not needed; the fence is copied onto the class so later config
+    // changes don't affect it.
+    const fence = input.requireLocation ? campusFence(c.env) : null;
     const db = c.env.DB;
     const now = Date.now();
     await expireStale(db, now).run();
@@ -127,10 +187,24 @@ export const liveRoutes = new Hono<AppEnv>()
           db
             .prepare(
               `INSERT INTO attendance_sessions
-                 (offering_id, class_date, start_time, topic, status, code, code_status, code_started_at, code_expires_at, started_by_user_id)
-               VALUES (?, ?, ?, NULL, 'held', ?, 'active', ?, ?, ?)`,
+                 (offering_id, class_date, start_time, topic, status, code, code_status, code_started_at, code_expires_at, started_by_user_id,
+                  geo_required, geo_lat, geo_lng, geo_accuracy_m, geo_radius_m)
+               VALUES (?, ?, ?, NULL, 'held', ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)`,
             )
-            .bind(offering.offeringId, date, time, code, now, now + LIVE_CODE_MINUTES * MINUTE, c.get("auth").userId),
+            .bind(
+              offering.offeringId,
+              date,
+              time,
+              code,
+              now,
+              now + LIVE_CODE_MINUTES * MINUTE,
+              c.get("auth").userId,
+              fence ? 1 : 0,
+              fence?.lat ?? null,
+              fence?.lng ?? null,
+              null,
+              fence?.halfSizeM ?? null,
+            ),
           db
             .prepare(
               `INSERT INTO attendance_records (session_id, enrollment_id, status)

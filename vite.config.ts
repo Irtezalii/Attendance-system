@@ -8,6 +8,15 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 export default defineConfig({
   plugins: [react(), tailwindcss(), cloudflare()],
   server: {
-    allowedHosts: ['diameter-latinas-dive-eugene.trycloudflare.com'],
+    // Allow sharing the dev server through a Cloudflare quick tunnel (*.trycloudflare.com)
+    // or VS Code port forwarding (*.devtunnels.ms).
+    allowedHosts: ['.trycloudflare.com', '.devtunnels.ms'],
+    fs: {
+      // Vite's defaults plus local credential files, so a shared dev server never serves them.
+      deny: [
+        '.env', '.env.*', '*.{crt,pem,key,p12,pfx,cer,der}', '.npmrc', '.yarnrc.yml', '**/.git/**',
+        '**/logins.txt', '**/scripts/data/**', '**/.wrangler/**', '**/.dev.vars*',
+      ],
+    },
   },
 })

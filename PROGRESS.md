@@ -7,7 +7,8 @@
   - Branding: official logo (header, login, favicon) and UBIT campus photo; sliding compact header; centred nav; My Profile in the header (sign out moved to the profile page).
   - Morning/Evening (migration 0003): separate offerings per schedule; triggers block cross-schedule and cross-programme enrollment; programme/schedule badges and filters on Take Attendance and My Courses.
   - Live attendance codes (migration 0004): professor chat window with START, EXTEND +5 and STOP; 10-minute 4-digit codes enforced by the server; student check-in on the dashboard; rate-limited.
-  - Agentation toolbar (dev only).
+  - Location check (migration 0005): a "Require location" toggle (off by default). Students must check in from inside a 400 × 400 m box centred on UBIT (`CAMPUS_*` vars; the point comes from OpenStreetMap and should be verified on a map). The professor's device location isn't needed, because laptops are too imprecise. Students are told how far outside they are or what to fix, and refusals are shown to the professor. A deterrent, not proof: GPS can be spoofed.
+  - Agentation installed but switched off.
 - **Verified**: 49 API tests pass; type-check, lint and build are clean; live flow checked in the browser on the production build.
 
 ## Status

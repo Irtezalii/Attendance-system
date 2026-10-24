@@ -122,7 +122,19 @@ export const csrfProtection: MiddlewareHandler<AppEnv> = async (c, next) => {
 
   const origin = c.req.header("Origin");
   if (origin !== undefined) {
-    if (origin !== new URL(c.req.url).origin) throw new HttpError(403, "Cross-site request blocked.");
+    // Compare hosts, not full origins: a TLS-terminating proxy (e.g. a Cloudflare quick tunnel
+    // to the dev server) forwards https requests as http. A cross-site page has a different host.
+    let originHost: string | null = null;
+    try {
+      originHost = new URL(origin).host;
+    } catch {
+      // "null" or malformed Origin: treat as cross-site.
+    }
+    // Some proxies (e.g. VS Code port forwarding) rewrite Host and pass the public one in
+    // X-Forwarded-Host. Accepting it is safe: a cross-site page cannot set custom headers
+    // without a CORS preflight, which this API never allows.
+    const hosts = [new URL(c.req.url).host, c.req.header("X-Forwarded-Host")?.split(",")[0].trim()];
+    if (!originHost || !hosts.includes(originHost)) throw new HttpError(403, "Cross-site request blocked.");
   } else if (c.req.header("Sec-Fetch-Site") === "cross-site") {
     throw new HttpError(403, "Cross-site request blocked.");
   }

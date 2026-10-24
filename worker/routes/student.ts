@@ -4,15 +4,18 @@ import type {
   CheckInResponse,
   AttendanceStatus,
   EnrollmentStatus,
+  GeoRejectionReason,
   SessionStatus,
   StudentCourse,
   StudentCourseDetailResponse,
   StudentCoursesResponse,
   StudentHistoryResponse,
 } from "../../shared/api";
-import { summarize } from "../../shared/api";
+import { GEO_MAX_ACCURACY, LOCATION_REQUIRED_DETAIL, summarize } from "../../shared/api";
 import { requireAuth, type AppEnv } from "../lib/auth";
+import { metresOutsideBox } from "../lib/geo";
 import { HttpError, idParam, parseBody } from "../lib/http";
+import { geoPointSchema } from "./live";
 import { OFFERING_COLUMNS, OFFERING_JOINS, OFFERING_ORDER, toOfferingInfo, type OfferingRow } from "../lib/queries";
 
 interface StudentCourseRow extends OfferingRow {
@@ -48,25 +51,91 @@ function toStudentCourse(row: StudentCourseRow): StudentCourse {
   };
 }
 
-const checkInSchema = z.object({ code: z.string().trim().regex(/^\d{4}$/, "Enter the 4-digit code from your professor.") });
+const checkInSchema = z.object({
+  code: z.string().trim().regex(/^\d{4}$/, "Enter the 4-digit code from your professor."),
+  location: geoPointSchema.nullable().optional(),
+});
 
 export const studentRoutes = new Hono<AppEnv>()
   .use(requireAuth("student"))
   // Mark yourself present with the professor's live code.
   .post("/check-in", async (c) => {
-    const { code } = await parseBody(c, checkInSchema);
+    const { code, location } = await parseBody(c, checkInSchema);
     const auth = c.get("auth");
     const { success } = await c.env.CHECKIN_LIMITER.limit({ key: `user:${auth.userId}` });
     if (!success) throw new HttpError(429, "Too many attempts. Please wait a minute and try again.");
 
     const db = c.env.DB;
     const now = Date.now();
-    // One statement validates and records: the code must be active and unexpired, and the
-    // student must be enrolled (status 'enrolled') in that exact offering — which already fixes
-    // programme, semester, section and Morning/Evening. Only an untouched Absent mark is changed.
+    const notValid = () => new HttpError(400, "This code is not valid for any of your classes right now.");
+
+    // 1. Code + class: the code must be active and unexpired, and the student enrolled in that
+    //    exact offering (which fixes programme, semester, section and Morning/Evening). Students
+    //    outside the class learn nothing more, not even whether a location is required.
+    const target = await db
+      .prepare(
+        `SELECT a.id AS session_id, e.id AS enrollment_id, a.geo_required, a.geo_lat, a.geo_lng, a.geo_radius_m, r.status
+           FROM attendance_sessions a
+           JOIN enrollments e ON e.offering_id = a.offering_id AND e.student_id = ? AND e.status = 'enrolled'
+           LEFT JOIN attendance_records r ON r.session_id = a.id AND r.enrollment_id = e.id
+          WHERE a.code = ? AND a.code_status = 'active' AND a.code_expires_at > ?`,
+      )
+      .bind(auth.profileId, code, now)
+      .first<{
+        session_id: number;
+        enrollment_id: number;
+        geo_required: number;
+        geo_lat: number | null;
+        geo_lng: number | null;
+        geo_radius_m: number | null;
+        status: AttendanceStatus | null;
+      }>();
+    if (!target || target.status === null) throw notValid();
+    if (target.status === "present") throw new HttpError(409, "Your attendance for this class is already recorded.");
+
+    // 2. Location, when the professor required it: within the radius of the professor's position.
+    let distance: number | null = null;
+    let accuracy: number | null = null;
+    if (target.geo_required) {
+      const reject = async (reason: GeoRejectionReason, message: string) => {
+        await db
+          .prepare("INSERT INTO checkin_rejections (session_id, enrollment_id, reason, distance_m, accuracy_m, at) VALUES (?, ?, ?, ?, ?, ?)")
+          .bind(target.session_id, target.enrollment_id, reason, distance, accuracy, now)
+          .run();
+        throw new HttpError(400, message);
+      };
+      if (location === undefined) {
+        // Not attempted yet: ask the client for a location (not logged as a rejection).
+        throw new HttpError(400, "This class requires your location. Allow location access when your browser asks.", {
+          [LOCATION_REQUIRED_DETAIL]: ["required"],
+        });
+      }
+      if (location === null) {
+        await reject("no_location", "This class requires your location. Allow location access for this site, or ask your professor to mark you manually.");
+      } else {
+        accuracy = location.accuracy;
+        // Square campus box stored on the class: geo_radius_m is its half-size (metres each way).
+        distance = metresOutsideBox(target.geo_lat!, target.geo_lng!, target.geo_radius_m!, location.lat, location.lng);
+        if (location.accuracy > GEO_MAX_ACCURACY) {
+          await reject(
+            "imprecise",
+            `Your location isn't precise enough (±${Math.round(location.accuracy)} m). Turn on precise location/GPS on your phone and try again.`,
+          );
+        }
+        if (distance > 0) {
+          await reject(
+            "out_of_range",
+            `You're about ${Math.round(distance)} m outside the ${c.env.CAMPUS_NAME} area. You must be on campus near ${c.env.CAMPUS_NAME} to mark attendance.`,
+          );
+        }
+      }
+    }
+
+    // 3. Record: one conditional UPDATE re-checks the code is still active, so a code that
+    //    expires or is stopped mid-request, or a duplicate submission, changes nothing.
     const recorded = await db
       .prepare(
-        `UPDATE attendance_records SET status = 'present', checked_in_at = ?
+        `UPDATE attendance_records SET status = 'present', checked_in_at = ?, checkin_distance_m = ?, checkin_accuracy_m = ?
           WHERE checked_in_at IS NULL AND status = 'absent'
             AND (session_id, enrollment_id) = (
               SELECT a.id, e.id
@@ -76,7 +145,7 @@ export const studentRoutes = new Hono<AppEnv>()
                  AND e.student_id = ? AND e.status = 'enrolled')
           RETURNING session_id`,
       )
-      .bind(now, code, now, auth.profileId)
+      .bind(now, distance, accuracy, code, now, auth.profileId)
       .first<{ session_id: number }>();
 
     if (!recorded) {
@@ -92,7 +161,7 @@ export const studentRoutes = new Hono<AppEnv>()
         .first();
       if (existing) throw new HttpError(409, "Your attendance for this class is already recorded.");
       // Same answer for wrong, expired, deactivated, or another class's code.
-      throw new HttpError(400, "This code is not valid for any of your classes right now.");
+      throw notValid();
     }
 
     const info = await db

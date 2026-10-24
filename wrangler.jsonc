@@ -52,7 +52,13 @@
 	],
 	// Timezone used for class dates/times of live attendance codes.
 	"vars": {
-		"APP_TIMEZONE": "Asia/Karachi"
+		"APP_TIMEZONE": "Asia/Karachi",
+		// "Require location" fence: a square box CAMPUS_HALF_SIZE_M metres north/south/east/west
+		// of this point. Default point: DCS-UBIT building per OpenStreetMap (verify on a map).
+		"CAMPUS_NAME": "UBIT",
+		"CAMPUS_LAT": "24.9455367",
+		"CAMPUS_LNG": "67.1154504",
+		"CAMPUS_HALF_SIZE_M": "200"
 	}
 	/**
 	 * Smart Placement

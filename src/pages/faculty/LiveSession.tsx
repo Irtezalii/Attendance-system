@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router";
-import type { LiveCodeStatus, LiveSession as LiveSessionData, LiveStateResponse } from "../../../shared/api";
+import type {
+  GeoRejectionReason,
+  LiveCodeStatus,
+  LiveSession as LiveSessionData,
+  LiveStartRequest,
+  LiveStateResponse,
+} from "../../../shared/api";
 import { formatDayMonthYear, liveMessages } from "../../../shared/api";
 import {
   BackLink,
@@ -64,6 +70,7 @@ export function LiveSession() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
+  const [requireLocation, setRequireLocation] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   // serverNow - Date.now() at the last response, so the countdown follows the server clock.
   const [offset, setOffset] = useState(0);
@@ -163,9 +170,16 @@ export function LiveSession() {
     say("professor", [commandText(command)]);
     try {
       if (command.kind === "start") {
-        const state = await apiRequest<LiveStateResponse>(`${base}/start`, { method: "POST" });
+        const body: LiveStartRequest = { requireLocation };
+        const state = await apiRequest<LiveStateResponse>(`${base}/start`, { body });
         apply(state);
         say("assistant", liveMessages.started(state.session!.classDate, state.session!.code));
+        const geo = state.session!.geo;
+        if (geo) {
+          say("assistant", [
+            `Location check is on: students must check in from inside the ${geo.areaName} area (${geo.halfSizeM} m in every direction around ${geo.areaName}).`,
+          ]);
+        }
       } else if (command.kind === "extend") {
         apply(await apiRequest<LiveStateResponse>(`${base}/extend`, { body: { code: command.code } }));
         say("assistant", [liveMessages.extended]);
@@ -246,12 +260,25 @@ export function LiveSession() {
             {readOnly ? (
               <p className="text-sm text-slate-500">This semester is completed, so attendance codes can no longer be issued.</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {!active ? (
-                  <button type="button" disabled={busy} onClick={() => run({ kind: "start" })} className={buttonStyles.primary}>
-                    {busy && <Spinner className="size-4 border-white/40 border-t-white" />}
-                    Take New Attendance
-                  </button>
+                  <>
+                    <button type="button" disabled={busy} onClick={() => run({ kind: "start" })} className={buttonStyles.primary}>
+                      {busy && <Spinner className="size-4 border-white/40 border-t-white" />}
+                      Take New Attendance
+                    </button>
+                    {/* Off by default: online / off-campus classes work without location. */}
+                    <label className="ml-1 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={requireLocation}
+                        disabled={busy}
+                        onChange={(e) => setRequireLocation(e.target.checked)}
+                        className="size-4 accent-ku-maroon-700"
+                      />
+                      Require location (students on campus)
+                    </label>
+                  </>
                 ) : (
                   <>
                     <button type="button" disabled={busy} onClick={() => run({ kind: "extend", code: session!.code })} className={buttonStyles.secondary}>
@@ -289,6 +316,12 @@ export function LiveSession() {
       </div>
     </>
   );
+}
+
+function rejectionLabel(reason: GeoRejectionReason, distanceM: number | null, accuracyM: number | null): string {
+  if (reason === "out_of_range") return `${distanceM} m outside the area`;
+  if (reason === "imprecise") return `GPS too imprecise (±${accuracyM} m)`;
+  return "No location shared";
 }
 
 const STATUS_PILL: Record<LiveCodeStatus, { label: string; className: string }> = {
@@ -361,7 +394,10 @@ function StatusPanel({
             {session.checkIns.map((c) => (
               <li key={c.rollNumber} className="flex justify-between gap-2">
                 <span className="truncate text-ku-navy-900">{c.name}</span>
-                <span className="shrink-0 text-xs text-slate-500">{formatClock(c.at - offset, timeZone)}</span>
+                <span className="shrink-0 text-xs text-slate-500">
+                  {c.distanceM !== null && "on campus · "}
+                  {formatClock(c.at - offset, timeZone)}
+                </span>
               </li>
             ))}
           </ul>
@@ -369,6 +405,29 @@ function StatusPanel({
           <p className="mt-1 text-xs text-slate-500">No check-ins yet.</p>
         )}
       </div>
+
+      {session.geo && (
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Location check</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Students must be inside the {session.geo.areaName} area ({session.geo.halfSizeM} m each way)
+          </p>
+          {session.rejections.length > 0 && (
+            <>
+              <p className="mt-3 text-sm font-medium text-amber-800">Not accepted ({session.rejections.length})</p>
+              <ul className="mt-1 max-h-40 space-y-1 overflow-y-auto text-sm">
+                {session.rejections.map((r) => (
+                  <li key={r.rollNumber} className="flex justify-between gap-2">
+                    <span className="truncate text-ku-navy-900">{r.name}</span>
+                    <span className="shrink-0 text-xs text-amber-800">{rejectionLabel(r.reason, r.distanceM, r.accuracyM)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-slate-500">If a student is genuinely in class, mark them present under “Review or correct marks”.</p>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="mt-5 space-y-1 border-t border-slate-100 pt-4 text-xs text-slate-500">
         <p>

@@ -195,11 +195,40 @@ export type LiveCodeStatus = "active" | "expired" | "deactivated";
 export const LIVE_CODE_MINUTES = 10;
 export const LIVE_EXTEND_MINUTES = 5;
 
+/** Student locations less precise than this (metres) are refused. */
+export const GEO_MAX_ACCURACY = 100;
+
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+  /** Reported accuracy radius in metres. */
+  accuracy: number;
+}
+
 export interface LiveCheckIn {
   rollNumber: string;
   name: string;
   /** Unix ms. */
   at: number;
+  /** Metres outside the campus area when location was required (0 = inside); null otherwise. */
+  distanceM: number | null;
+}
+
+export type GeoRejectionReason = "out_of_range" | "imprecise" | "no_location";
+
+/** Latest refused attempt per student who is not (yet) marked present. */
+export interface LiveRejection {
+  rollNumber: string;
+  name: string;
+  reason: GeoRejectionReason;
+  distanceM: number | null;
+  accuracyM: number | null;
+  at: number;
+}
+
+export interface LiveStartRequest {
+  /** Students must check in from inside the campus area (box around UBIT). */
+  requireLocation?: boolean;
 }
 
 export interface LiveSession {
@@ -217,6 +246,9 @@ export interface LiveSession {
   presentCount: number;
   enrolledCount: number;
   checkIns: LiveCheckIn[];
+  /** Campus location check (square box around the campus point), or null when the code works anywhere. */
+  geo: { areaName: string; halfSizeM: number } | null;
+  rejections: LiveRejection[];
 }
 
 export interface LiveStateResponse {
@@ -235,7 +267,15 @@ export interface LiveCodeRequest {
 
 export interface CheckInRequest {
   code: string;
+  /**
+   * Omitted: location not attempted yet (the server answers "location required" if needed).
+   * null: the device could not provide a location (permission denied, timeout, unsupported).
+   */
+  location?: GeoPoint | null;
 }
+
+/** `details` key the check-in endpoint uses to ask the client for a location. */
+export const LOCATION_REQUIRED_DETAIL = "location";
 
 export interface CheckInResponse {
   courseCode: string;

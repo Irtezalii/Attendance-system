@@ -22,6 +22,7 @@ KU/UBIT student attendance system: React SPA + Hono Worker API + D1 in one Cloud
 - **Schema** (`migrations/`):
   - 0002: `programmes`, `curricula`/`curriculum_courses` (definitions only), and `faculty` directory profiles (`user_id` NULL means no login).
   - 0003: `shift` on offerings and students. Unique on (course, semester, shift, section). Triggers block cross-shift and cross-programme enrollment. An offering's programme is derived from the curriculum.
+  - 0005: optional campus geofence. START with `requireLocation` copies the campus box from the `CAMPUS_*` vars onto the class: `geo_lat`/`geo_lng` hold the centre and `geo_radius_m` the box half-size; the professor's location isn't used. Check-in first validates the code and enrollment, then the student's location (`metresOutsideBox`, `lib/geo.ts`, accuracy ≤ 100 m), then runs the same conditional `UPDATE`. Refusals are logged in `checkin_rejections` and shown to the professor. Only metres-outside and accuracy are stored. Location is off by default.
   - 0004: live codes on `attendance_sessions`. START inserts the class plus Absent records. Check-in is a single conditional `UPDATE` to Present. Expiry is timestamp-based (`code_expires_at > now`). Partial unique indexes allow one active code per offering and per code. `CHECKIN_LIMITER` limits attempts and `APP_TIMEZONE` sets dates.
 - **Data pipeline** (no HTTP admin endpoints): `scripts/import-curriculum.mjs` (also regenerates `docs/curriculum-validation.md`), `import-faculty.mjs` (never creates logins), `grant-faculty-access.mjs`, and `seed.mjs` (validates codes, programme and shift). All emit idempotent SQL.
 - **Frontend**: react-router v8. Routes are in `App.tsx`, nav in `components/Layout.tsx`. Use `lib/api.ts` (401 → session expired) and `lib/useApi.ts`. Branding is in `lib/branding.ts`, theme tokens in `index.css` `@theme`, and class strings in `lib/styles.ts`.
@@ -36,6 +37,6 @@ KU/UBIT student attendance system: React SPA + Hono Worker API + D1 in one Cloud
 - **CSP**: strict (`public/_headers`). No inline scripts, `<style>` tags or external CDNs or fonts.
 - **react-refresh lint**: only components may be exported from `.tsx` files (`lib/auth.tsx`'s `useAuth` is the one marked exception).
 - **D1 hot spots**: `getOwnedOffering` / faculty offering lists and "recent sessions" compute stats over all history (thousands of rows per call); the live-code poll calls `requireOwnedOffering` every 5 s. Use a lightweight ownership check in new hot paths.
-- **Dev-only tooling**: the Agentation toolbar renders only under `import.meta.env.DEV` (`src/main.tsx`). Keep it out of production builds.
+- **Dev-only tooling**: Agentation is installed but switched off (see the comment in `src/main.tsx`). If re-enabled, render it only under `import.meta.env.DEV`.
 - **Source data**: curriculum and faculty JSON stay as published. Note doubts in `sourceIssues`/`notes`.
 - **Secrets**: real data and credentials go in gitignored `scripts/data/` (and `logins.txt`). Never commit them or generated SQL.
